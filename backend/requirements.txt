@@ -1,0 +1,5 @@
+# Dépendances Python requises pour le projet
+# FastAPI et dépendances
+# Outils de traitement GPX
+# Bibliothèques de machine learning
+# Utilitaires de développement
