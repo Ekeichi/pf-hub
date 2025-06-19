@@ -1,0 +1,18 @@
+from fastapi import APIRouter, Depends
+from sqlalchemy.orm import Session
+from app.api.strava import get_db
+from app.services.prediction_service import predict_race_time
+
+router = APIRouter(tags=["test"])
+
+@router.get("/predict")
+def test_prediction(db: Session = Depends(get_db)):
+    gpx_path = "app/data/la-6000d-2025-la-6d-marathon.gpx"
+    athlete_id = 32883472  # à adapter
+    result, distance = predict_race_time(gpx_path, db, athlete_id)
+    return {
+        "predicted_time_minutes": result,
+        "distance_m": distance
+    }
+
+
