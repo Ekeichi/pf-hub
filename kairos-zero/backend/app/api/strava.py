@@ -1,24 +1,17 @@
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
-from app.database import SessionLocal
+from app.database import get_db
 from app.config import STRAVA_CLIENT_ID, REDIRECT_URI
 from app.services.strava_service import StravaService
 from app.repositories.strava_token import upsert_strava_token
 from app.models.strava_token import StravaToken
 from app.repositories.strava_activity import save_activities, fetch_full_activity_details
-from app.utils.strava_auth import get_athlete_id_from_token
+from app.utils.strava_auth import get_current_token, get_athlete_id_from_token
+import requests
 
 router = APIRouter()
 service = StravaService()
-
-
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
 
 @router.get("/strava/auth")
 def auth():
@@ -46,9 +39,9 @@ def callback(code: str, db: Session = Depends(get_db)):
 
     return {"status": "token enregistré", "athlete_id": data["athlete"]["id"]}
 
-@router.get("/api/strava/activities")
+@router.get("/strava/activities")
 def get_activities(db: Session = Depends(get_db), token: str = Depends(get_current_token)):
-    athlete_id = get_athlete_id_from_token(token)
+    athlete_id = get_athlete_id_from_token(db)
     headers = {"Authorization": f"Bearer {token}"}
     
     # Récupération des activités (liste de base)

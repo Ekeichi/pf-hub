@@ -2,13 +2,12 @@ from sqlalchemy.orm import Session
 from app.models.strava_activity import StravaActivity
 from typing import List, Dict
 from datetime import datetime
-from sqlalchemy.orm import Session
-from app.models.strava_activity import StravaActivity
 import requests
 import json
 
 def save_activities(db: Session, athlete_id: int, activities: List[Dict]):
     for act in activities:
+        # Vérifie si l'activité existe déjà en base
         existing = db.query(StravaActivity).filter_by(activity_id=act["activity_data"]["id"]).first()
         if existing:
             continue
@@ -17,6 +16,42 @@ def save_activities(db: Session, athlete_id: int, activities: List[Dict]):
         streams = act.get("streams", {})
         best_efforts = act.get("best_efforts", [])
 
+        # Récupération sécurisée des données de streams
+        distance_data = streams.get("distance", {}).get("data", [])
+        time_data = streams.get("time", {}).get("data", [])
+        velocity_data = streams.get("velocity_smooth", {}).get("data", [])
+        altitude_data = streams.get("altitude", {}).get("data", [])
+        heartrate_data = streams.get("heartrate", {}).get("data", [])
+        watts_data = streams.get("watts", {}).get("data", [])
+        cadence_data = streams.get("cadence", {}).get("data", [])
+        segments_data = streams.get("segments", {}).get("data", [])
+
+        # Sérialisation JSON conditionnelle
+        elevation_data = json.dumps({
+            "distance": [d / 1000 for d in distance_data],
+            "altitude": altitude_data
+        }) if distance_data or altitude_data else None
+
+        pace_data = json.dumps({
+            "time": time_data,
+            "distance": [d / 1000 for d in distance_data],
+            "velocity": [round(v * 3.6, 2) if v is not None else None for v in velocity_data]
+        }) if time_data or distance_data or velocity_data else None
+
+        heartrate_json = json.dumps({
+            "time": time_data,
+            "heartrate": heartrate_data
+        }) if time_data or heartrate_data else None
+
+        power_data = json.dumps({
+            "watts": watts_data,
+            "cadence": cadence_data,
+            "time": time_data
+        }) if watts_data or cadence_data else None
+
+        segments_json = json.dumps(segments_data) if segments_data else None
+
+        # Création de l'instance StravaActivity à insérer
         new_act = StravaActivity(
             athlete_id=athlete_id,
             activity_id=activity["id"],
@@ -32,29 +67,16 @@ def save_activities(db: Session, athlete_id: int, activities: List[Dict]):
             average_heartrate=activity.get("average_heartrate"),
             max_heartrate=activity.get("max_heartrate"),
             calories=activity.get("calories"),
-            elevation_data=json.dumps({
-                "distance": [d/1000 for d in streams.get("distance", {}).get("data", [])],
-                "altitude": streams.get("altitude", {}).get("data", [])
-            }) if "distance" in streams else None,
-            pace_data=json.dumps({
-                "time": streams.get("time", {}).get("data", []),
-                "distance": [d/1000 for d in streams.get("distance", {}).get("data", [])],
-                "velocity": [round(v * 3.6, 2) if v is not None else None for v in streams.get("velocity_smooth", {}).get("data", [])]
-            }) if "velocity_smooth" in streams else None,
-            heartrate_data=json.dumps({
-                "time": streams.get("time", {}).get("data", []),
-                "heartrate": streams.get("heartrate", {}).get("data", [])
-            }) if "heartrate" in streams else None,
-            segments=json.dumps(streams.get("segments", {}).get("data", [])) if "segments" in streams else None,
-            power_data=json.dumps({
-                "watts": streams.get("watts", {}).get("data", []),
-                "cadence": streams.get("cadence", {}).get("data", []),
-                "time": streams.get("time", {}).get("data", [])
-            }) if "watts" in streams else None,
+            elevation_data=elevation_data,
+            pace_data=pace_data,
+            heartrate_data=heartrate_json,
+            segments=segments_json,
+            power_data=power_data,
             best_efforts=json.dumps(best_efforts)
         )
 
         db.add(new_act)
+
     db.commit()
 
 
@@ -69,9 +91,17 @@ def get_activities_for_prediction(db: Session, athlete_id: int):
         StravaActivity.heartrate_data.isnot(None)
     ).all()
 
+
 def fetch_full_activity_details(access_token: str, activity_id: int) -> dict:
     """
-    Récupère les infos détaillées + best_efforts + streams d'une activité
+    Récupère les infos détaillées + best_efforts + streams d'une activité Strava via l'API.
+
+    Args:
+        access_token (str): Token d'accès OAuth Strava.
+        activity_id (int): ID de l'activité.
+
+    Returns:
+        dict: Dictionnaire contenant "activity_data", "streams", et "best_efforts".
     """
     headers = {"Authorization": f"Bearer {access_token}"}
 
@@ -83,10 +113,17 @@ def fetch_full_activity_details(access_token: str, activity_id: int) -> dict:
 
     data = resp_detail.json()
 
-    # 2. Streams
-    types = ["segments", "power_data", "pace_data", "elevation_data", "heartrate_data"]
+    # 2. Streams (types demandés adaptés à Strava API)
+    types = [
+        "distance", "time", "velocity_smooth", "altitude", "heartrate",
+        "watts", "cadence", "segments"
+    ]
     stream_url = f"https://www.strava.com/api/v3/activities/{activity_id}/streams"
-    resp_stream = requests.get(stream_url, headers=headers, params={"keys": ",".join(types), "key_by_type": True})
+    resp_stream = requests.get(
+        stream_url,
+        headers=headers,
+        params={"keys": ",".join(types), "key_by_type": True}
+    )
     streams = resp_stream.json() if resp_stream.status_code == 200 else {}
 
     return {
