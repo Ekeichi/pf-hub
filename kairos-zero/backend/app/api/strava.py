@@ -37,7 +37,8 @@ def callback(code: str, db: Session = Depends(get_db)):
         expires_at=data["expires_at"]
     )
 
-    return {"status": "token enregistré", "athlete_id": data["athlete"]["id"]}
+    # Redirige vers le frontend après succès
+    return RedirectResponse("http://localhost:5173/strava-success")
 
 @router.get("/strava/activities")
 def get_activities(db: Session = Depends(get_db), token: str = Depends(get_current_token)):

@@ -1,30 +1,43 @@
-import { useState } from "react"
+import React, { useEffect, useState } from "react";
+import StravaLoginButton from "../components/StravaLoginButton";
 
 const Home = () => {
-  const [data, setData] = useState<any>(null)
+  const [prediction, setPrediction] = useState(null);
 
-  const handleClick = async () => {
-    const res = await fetch("/api/test-simple")
-    const json = await res.json()
-    setData(json)
-  }
+  useEffect(() => {
+    if (localStorage.getItem("stravaJustConnected") === "1") {
+      localStorage.removeItem("stravaJustConnected");
+      fetch("/api/strava/activities")
+        .then(res => {
+          if (!res.ok) throw new Error("Erreur acquisition Strava");
+          return res.json();
+        })
+        .then(() => {
+          return fetch("/api/test-simple");
+        })
+        .then(res => {
+          if (!res.ok) throw new Error("Erreur prédiction");
+          return res.json();
+        })
+        .then(data => setPrediction(data))
+        .catch(err => {
+            setPrediction(null);
+        });
+    }
+  }, []);
 
   return (
-    <div className="p-4">
-      <button
-        onClick={handleClick}
-        className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-      >
-        Tester l'API
-      </button>
-
-      {data && (
-        <pre className="mt-4 bg-gray-100 p-2 rounded">
-          {JSON.stringify(data, null, 2)}
-        </pre>
+    <div>
+      <h1>Bienvenue</h1>
+      <StravaLoginButton />
+      {prediction && (
+        <div style={{ marginTop: 20 }}>
+          <h3>Résultat de la prédiction :</h3>
+          <pre>{JSON.stringify(prediction, null, 2)}</pre>
+        </div>
       )}
     </div>
-  )
-}
+  );
+};
 
-export default Home
+export default Home;
