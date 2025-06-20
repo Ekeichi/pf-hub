@@ -22,7 +22,7 @@ app = FastAPI()
 
 app.include_router(predict.router, prefix="/api", tags=["Prediction"])
 app.include_router(strava.router, prefix="/api", tags=["Strava"])
-
+app.include_router(test.router, prefix="/api", tags=["Test"])
 
 app.include_router(test.router, prefix="/api/test")
 

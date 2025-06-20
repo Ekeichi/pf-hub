@@ -36,3 +36,6 @@ def test_prediction(db: Session = Depends(get_db)):
     }
 
 
+@router.get("/status")
+def get_status():
+    return {"status": "OK"}
