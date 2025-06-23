@@ -6,7 +6,7 @@ const StravaLoginButton: React.FC = () => {
   };
 
   return (
-    <button onClick={handleLogin} className="btn">
+    <button onClick={handleLogin} className="btn primary">
       START NOW
     </button>
   );
