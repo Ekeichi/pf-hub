@@ -3,3 +3,9 @@
 # Outils de traitement GPX
 # Bibliothèques de machine learning
 # Utilitaires de développement
+
+fastapi
+uvicorn
+sqlalchemy
+requests
+python-multipart

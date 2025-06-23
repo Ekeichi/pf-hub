@@ -8,11 +8,10 @@ Configure et lance le serveur avec :
 """
 
 from fastapi import FastAPI
-from app.api import predict, strava
+from app.api import predict, strava, test, upload
 from app.models.strava_token import Base
 from app.models.strava_activity import Base as ActivityBase
 from app.database import engine
-from app.api import test
 
 # Création des tables de la base de données
 Base.metadata.create_all(bind=engine)
@@ -22,7 +21,6 @@ app = FastAPI()
 
 app.include_router(predict.router, prefix="/api", tags=["Prediction"])
 app.include_router(strava.router, prefix="/api", tags=["Strava"])
-app.include_router(test.router, prefix="/api", tags=["Test"])
-
-app.include_router(test.router, prefix="/api/test")
+app.include_router(test.router, prefix="/api/test", tags=["Test"])
+app.include_router(upload.router, prefix="/api", tags=["Upload"])
 
