@@ -2,22 +2,16 @@ import React from 'react';
 
 const Footer: React.FC = () => {
   return (
-    <footer className="footer">
-      <div className="container">
-        <div className="footer-content">
-          <div className="footer-section">
-            <h4>PEAKFLOW TECHNOLOGIES</h4>
-          </div>
-          
-          <div className="footer-section">
-            <a href="https://github.com/peakflow-technologies" target="_blank" rel="noopener noreferrer">GitHub</a>
-            <a href="mailto:contact@peakflow-technologies.com">Contact</a>
-            <a href="/privacy">Privacy</a>
-          </div>
+    <footer>
+      <div className="footer-content">
+        <div className="footer-left">
+          <div className="footer-logo">PEAKFLOW TECHNOLOGIES</div>
+          <div className="copyright">© 2025 PeakFlow Technologies</div>
         </div>
-        
-        <div className="footer-bottom">
-          <p>&copy; 2025 PeakFlow Technologies</p>
+        <div className="footer-links">
+          <a href="https://github.com/peakflow-technologies" target="_blank" rel="noopener noreferrer">GitHub</a>
+          <a href="#contact">Contact</a>
+          <a href="#privacy">Privacy</a>
         </div>
       </div>
     </footer>

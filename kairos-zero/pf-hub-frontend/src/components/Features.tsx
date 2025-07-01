@@ -5,70 +5,47 @@ const Features: React.FC = () => {
     {
       icon: "🏃‍♂️",
       title: "Personalized Runner Profile",
-      description: "Advanced analytics that evaluates your running data, terrain, and unique strengths to create a tailored profile."
+      description: "Create a comprehensive profile based on your running history, fitness level, and performance metrics."
     },
     {
-      icon: "⛰️",
+      icon: "🏔️",
       title: "Terrain & Elevation Analysis",
-      description: "Precise calculations based on course elevation profiles to optimize your energy expenditure throughout the race."
+      description: "Advanced analysis of race terrain, elevation changes, and their impact on your pacing strategy."
     },
     {
-      icon: "📊",
+      icon: "🎯",
       title: "Adaptive Pacing Strategies",
-      description: "Kilometer-by-kilometer pacing recommendations that adapt to changing race conditions and your fatigue levels."
+      description: "Dynamic pacing recommendations that adapt to race conditions and your real-time performance."
     },
     {
       icon: "🌤️",
       title: "Weather Integration",
-      description: "Optional weather data integration to account for temperature, humidity, and wind conditions in your race strategy."
+      description: "Real-time weather data integration to optimize your race strategy based on current conditions."
     }
   ];
 
   return (
-    <>
-      {/* Runner Visualization Section */}
-      <section className="runner-section">
-        <div className="container">
-          <h2 className="runner-title fade-in-up">Runner visualization</h2>
-        </div>
-      </section>
-
-      {/* Features Section */}
-      <section className="section" id="features">
-        <div className="container">
-          <div className="fade-in-up" style={{ textAlign: 'center', marginBottom: '4rem' }}>
-            <h2>A new frontier in running performance</h2>
-          </div>
-          
-          <div className="card-grid">
-            {features.map((feature, index) => (
-              <div key={index} className="card fade-in-up" style={{ animationDelay: `${index * 0.1}s` }}>
-                <div className="feature-icon">
-                  {feature.icon}
-                </div>
-                <h3 className="feature-title">{feature.title}</h3>
-                <p className="feature-description">{feature.description}</p>
+    <section className="features">
+      <div className="container">
+        <h2>A new frontier in running performance</h2>
+        <div className="features-grid">
+          {features.map((feature, index) => (
+            <div 
+              key={index} 
+              className="feature-card"
+              onMouseEnter={(e) => e.currentTarget.classList.add('hover')}
+              onMouseLeave={(e) => e.currentTarget.classList.remove('hover')}
+            >
+              <div className="feature-icon">
+                <span style={{ fontSize: '2rem' }}>{feature.icon}</span>
               </div>
-            ))}
-          </div>
+              <h3>{feature.title}</h3>
+              <p>{feature.description}</p>
+            </div>
+          ))}
         </div>
-      </section>
-
-      {/* Community Section */}
-      <section className="community-section">
-        <div className="container">
-          <h3 className="community-title">Join the PeakFlow community</h3>
-          <div className="community-buttons">
-            <a href="https://github.com/peakflow-technologies" target="_blank" rel="noopener noreferrer" className="btn btn-secondary">
-              GitHub Repository
-            </a>
-            <a href="#" className="btn btn-secondary">
-              Research Paper
-            </a>
-          </div>
-        </div>
-      </section>
-    </>
+      </div>
+    </section>
   );
 };
 

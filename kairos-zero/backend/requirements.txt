@@ -9,3 +9,11 @@ uvicorn
 sqlalchemy
 requests
 python-multipart
+
+# Authentification et sécurité
+python-jose[cryptography]
+passlib[bcrypt]
+python-multipart
+
+# Validation des données
+pydantic[email]

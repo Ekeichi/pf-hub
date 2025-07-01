@@ -1,8 +1,8 @@
-from sqlalchemy import Column, Integer, Float, String, Text, BigInteger, DateTime, Boolean
+from sqlalchemy import Column, Integer, Float, String, Text, BigInteger, DateTime, Boolean, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import relationship
+from app.database import Base
 
-
-Base = declarative_base()
 
 class StravaActivity(Base):
     __tablename__ = "strava_activities"
@@ -33,3 +33,19 @@ class StravaActivity(Base):
     kilojoules = Column(Float, nullable=True)
     device_watts = Column(Boolean, default=False)
     suffer_score = Column(Float, nullable=True)
+    
+    # Nouvelles colonnes pour les zones cardiaques
+    zone_1_time = Column(Float, nullable=True)      # Temps en zone 1 (minutes)
+    zone_2_time = Column(Float, nullable=True)      # Temps en zone 2 (minutes)
+    zone_3_time = Column(Float, nullable=True)      # Temps en zone 3 (minutes)
+    zone_4_time = Column(Float, nullable=True)      # Temps en zone 4 (minutes)
+    zone_5_time = Column(Float, nullable=True)      # Temps en zone 5 (minutes)
+    below_zone_1_time = Column(Float, nullable=True) # Temps en dessous zone 1 (minutes)
+    above_zone_5_time = Column(Float, nullable=True) # Temps au-dessus zone 5 (minutes)
+    
+    # Score d'effort calculé
+    effort_score = Column(Float, nullable=True)     # Score d'effort relatif
+    
+    # Relation avec l'utilisateur
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)  # Nullable pour migration
+    user = relationship("User", back_populates="strava_activities")

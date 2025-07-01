@@ -5,9 +5,12 @@ from sqlalchemy import pool
 
 from alembic import context
 
-# Import des modèles de l'application
-from app.models.strava_token import Base as StravaTokenBase
-from app.models.strava_activity import Base as StravaActivityBase
+# Import global des modèles pour Alembic
+def import_models():
+    import app.models  # noqa
+import_models()
+
+from app.database import Base
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -22,7 +25,8 @@ if config.config_file_name is not None:
 # for 'autogenerate' support
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
-target_metadata = StravaTokenBase.metadata
+# Utilisation de la Base globale
+target_metadata = Base.metadata
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:

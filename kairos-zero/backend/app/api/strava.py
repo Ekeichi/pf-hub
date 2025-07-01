@@ -6,11 +6,15 @@ from app.config import STRAVA_CLIENT_ID, REDIRECT_URI
 from app.services.strava_service import StravaService
 from app.repositories.strava_token import upsert_strava_token
 from app.models.strava_token import StravaToken
-from app.repositories.strava_activity import save_activities, fetch_full_activity_details
+from app.models.strava_activity import StravaActivity
+from app.repositories.strava_activity import save_activities, fetch_full_activity_details, get_latest_activity_date, get_activities_summary
 from app.utils.strava_auth import get_current_token, get_athlete_id_from_token
+from app.dependencies.auth import get_current_user
+from app.models.user import User
 import requests
 import asyncio
 import time
+from datetime import datetime
 
 router = APIRouter()
 service = StravaService()
@@ -31,6 +35,7 @@ def auth():
 def callback(code: str, db: Session = Depends(get_db)):
     data = service.exchange_code(code)
 
+    # Sauvegarde du token Strava (sans user_id pour l'instant)
     upsert_strava_token(
         db,
         athlete_id=data["athlete"]["id"],
@@ -39,12 +44,42 @@ def callback(code: str, db: Session = Depends(get_db)):
         expires_at=data["expires_at"]
     )
 
-    # Redirige vers le frontend après succès
+    # Redirige vers le frontend après succès (sans synchronisation automatique)
     return RedirectResponse("http://localhost:5173/strava-success")
 
+@router.post("/strava/link-token")
+def link_strava_token_to_user(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """
+    Lie le token Strava le plus récent à l'utilisateur connecté.
+    """
+    try:
+        # Vérifier si l'utilisateur a déjà un token lié
+        existing_token = db.query(StravaToken).filter_by(user_id=current_user.id).first()
+        if existing_token:
+            return {"message": "Token Strava déjà lié", "athlete_id": existing_token.athlete_id}
+        
+        # Récupérer le token Strava le plus récent sans user_id
+        token_entry = db.query(StravaToken).filter_by(user_id=None).order_by(StravaToken.id.desc()).first()
+        
+        if not token_entry:
+            raise HTTPException(status_code=404, detail="Aucun token Strava non lié trouvé. Veuillez d'abord autoriser l'application Strava.")
+        
+        # Lier le token à l'utilisateur connecté
+        token_entry.user_id = current_user.id
+        db.commit()
+        
+        return {"message": "Token Strava lié avec succès", "athlete_id": token_entry.athlete_id}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Erreur lors de la liaison du token: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Erreur lors de la liaison du token: {str(e)}")
+
 @router.get("/strava/activities")
-def get_activities(db: Session = Depends(get_db), token: str = Depends(get_current_token)):
-    athlete_id = get_athlete_id_from_token(db)
+def get_activities(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    athlete_id = get_athlete_id_from_token(db, current_user)
+    token = get_current_token(db, current_user)
     headers = {"Authorization": f"Bearer {token}"}
     
     # Récupération des activités (liste de base)
@@ -77,9 +112,14 @@ def get_activities(db: Session = Depends(get_db), token: str = Depends(get_curre
         if full_data:
             detailed_activities.append(full_data)
 
-    save_activities(db, athlete_id, detailed_activities)
+    result = save_activities(db, athlete_id, detailed_activities)
 
-    return {"status": "OK", "saved": len(detailed_activities)}
+    return {
+        "status": "OK", 
+        "new_activities": result["new_activities"],
+        "updated_activities": result["updated_activities"],
+        "total_processed": result["total_processed"]
+    }
 
 def make_strava_request_with_retry(url, headers, params=None, max_retries=3, delay=1):
     """
@@ -121,7 +161,7 @@ def make_strava_request_with_retry(url, headers, params=None, max_retries=3, del
     # Si on arrive ici, toutes les tentatives ont échoué
     raise HTTPException(status_code=500, detail="Impossible de récupérer les données de Strava après plusieurs tentatives")
 
-async def stream_activity_sync(db: Session, token: str):
+async def stream_activity_sync(db: Session, current_user: User):
     """
     Générateur qui récupère les activités, les sauvegarde,
     et streame l'état d'avancement.
@@ -129,7 +169,8 @@ async def stream_activity_sync(db: Session, token: str):
     yield "data: Connexion à Strava...\n\n"
     await asyncio.sleep(1)
 
-    athlete_id = get_athlete_id_from_token(db)
+    athlete_id = get_athlete_id_from_token(db, current_user)
+    token = get_current_token(db, current_user)
     headers = {"Authorization": f"Bearer {token}"}
     
     # 1. Récupération de la liste des activités
@@ -151,7 +192,8 @@ async def stream_activity_sync(db: Session, token: str):
     await asyncio.sleep(1)
 
     # 2. Récupération des détails et sauvegarde
-    successful_syncs = 0
+    new_activities_count = 0
+    updated_activities_count = 0
     for i, act in enumerate(base_activities):
         activity_id = act.get("id")
         if not activity_id:
@@ -164,8 +206,9 @@ async def stream_activity_sync(db: Session, token: str):
         try:
             full_data = fetch_full_activity_details(token, activity_id)
             if full_data:
-                save_activities(db, athlete_id, [full_data])
-                successful_syncs += 1
+                result = save_activities(db, athlete_id, [full_data])
+                new_activities_count += result["new_activities"]
+                updated_activities_count += result["updated_activities"]
             
             # Délai entre les requêtes pour éviter le rate limiting
             await asyncio.sleep(0.5)
@@ -174,22 +217,23 @@ async def stream_activity_sync(db: Session, token: str):
             yield f"data: {{\"progress\": {progress}, \"message\": \"Erreur sur l'activité {i+1}: {str(e)}\"}}\n\n"
             continue
 
-    yield f"data: Synchronisation terminée ! {successful_syncs}/{total_activities} activités synchronisées.\n\n"
+    yield f"data: Synchronisation terminée ! {new_activities_count} nouvelles activités, {updated_activities_count} mises à jour.\n\n"
 
 @router.get("/strava/sync-activities")
-async def sync_activities_stream(db: Session = Depends(get_db), token: str = Depends(get_current_token)):
+async def sync_activities_stream(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     return StreamingResponse(
-        stream_activity_sync(db, token),
+        stream_activity_sync(db, current_user),
         media_type="text/event-stream"
     )
 
 @router.get("/strava/sync-simple")
-def sync_activities_simple(db: Session = Depends(get_db), token: str = Depends(get_current_token)):
+def sync_activities_simple(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     """
     Version simple de la synchronisation qui retourne un résultat JSON.
     """
     try:
-        athlete_id = get_athlete_id_from_token(db)
+        athlete_id = get_athlete_id_from_token(db, current_user)
+        token = get_current_token(db, current_user)
         headers = {"Authorization": f"Bearer {token}"}
         
         # Récupération de la liste des activités
@@ -201,7 +245,8 @@ def sync_activities_simple(db: Session = Depends(get_db), token: str = Depends(g
             raise HTTPException(status_code=400, detail="Réponse inattendue de Strava")
         
         total_activities = len(base_activities)
-        successful_syncs = 0
+        new_activities_count = 0
+        updated_activities_count = 0
         
         # Récupération des détails et sauvegarde
         for i, act in enumerate(base_activities):
@@ -212,8 +257,9 @@ def sync_activities_simple(db: Session = Depends(get_db), token: str = Depends(g
             try:
                 full_data = fetch_full_activity_details(token, activity_id)
                 if full_data:
-                    save_activities(db, athlete_id, [full_data])
-                    successful_syncs += 1
+                    result = save_activities(db, athlete_id, [full_data])
+                    new_activities_count += result["new_activities"]
+                    updated_activities_count += result["updated_activities"]
                 
                 # Délai entre les requêtes pour éviter le rate limiting
                 time.sleep(0.5)
@@ -224,10 +270,288 @@ def sync_activities_simple(db: Session = Depends(get_db), token: str = Depends(g
         
         return {
             "status": "success",
-            "message": f"Synchronisation terminée ! {successful_syncs}/{total_activities} activités synchronisées.",
-            "total_activities": total_activities,
-            "successful_syncs": successful_syncs
+            "message": f"Synchronisation terminée ! {new_activities_count} nouvelles activités, {updated_activities_count} mises à jour.",
+            "total_activities_processed": total_activities,
+            "new_activities": new_activities_count,
+            "updated_activities": updated_activities_count
         }
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erreur lors de la synchronisation: {str(e)}")
+
+@router.get("/strava/sync-activities-fast")
+async def sync_activities_fast(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """
+    Version rapide de la synchronisation avec système de cache intelligent.
+    """
+    try:
+        athlete_id = get_athlete_id_from_token(db, current_user)
+        token = get_current_token(db, current_user)
+        headers = {"Authorization": f"Bearer {token}"}
+        
+        # Récupération de la liste des activités (limité à 50 pour la rapidité)
+        url = "https://www.strava.com/api/v3/athlete/activities"
+        resp = make_strava_request_with_retry(url, headers, {"per_page": 50})
+        
+        base_activities = resp.json()
+        if not isinstance(base_activities, list):
+            raise HTTPException(status_code=400, detail="Réponse inattendue de Strava")
+        
+        total_activities = len(base_activities)
+        successful_syncs = 0
+        
+        # Récupération des détails et sauvegarde intelligente
+        for i, act in enumerate(base_activities):
+            activity_id = act.get("id")
+            if not activity_id:
+                continue
+            
+            try:
+                full_data = fetch_full_activity_details(token, activity_id)
+                if full_data:
+                    result = save_activities(db, athlete_id, [full_data])
+                    successful_syncs += result["new_activities"]
+                
+                # Délai réduit entre les requêtes
+                time.sleep(0.2)  # 200ms au lieu de 500ms
+                
+            except Exception as e:
+                print(f"Erreur sur l'activité {i+1}: {str(e)}")
+                continue
+        
+        return {
+            "status": "OK", 
+            "total_activities_processed": total_activities,
+            "new_activities_added": successful_syncs,
+            "message": f"Synchronisation rapide terminée : {successful_syncs} nouvelles activités ajoutées"
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erreur lors de la synchronisation : {str(e)}")
+
+@router.get("/strava/sync-intelligent")
+async def sync_activities_intelligent(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """
+    Synchronisation intelligente qui récupère seulement les nouvelles activités
+    et met à jour les activités modifiées.
+    """
+    try:
+        print(f"Début de synchronisation intelligente pour l'utilisateur {current_user.id}")
+        
+        athlete_id = get_athlete_id_from_token(db, current_user)
+        print(f"Athlete ID récupéré: {athlete_id}")
+        
+        token = get_current_token(db, current_user)
+        print(f"Token récupéré: {token[:20]}...")
+        
+        headers = {"Authorization": f"Bearer {token}"}
+        
+        # Récupération de la date de la dernière activité
+        latest_date = get_latest_activity_date(db, athlete_id)
+        print(f"Date de la dernière activité: {latest_date}")
+        
+        # Récupération de la liste des activités depuis Strava
+        url = "https://www.strava.com/api/v3/athlete/activities"
+        resp = make_strava_request_with_retry(url, headers, {"per_page": 200})
+        
+        base_activities = resp.json()
+        if not isinstance(base_activities, list):
+            raise HTTPException(status_code=400, detail="Réponse inattendue de Strava")
+        
+        print(f"Nombre d'activités récupérées de Strava: {len(base_activities)}")
+        
+        # Filtrage des nouvelles activités seulement
+        new_activities = []
+        if latest_date:
+            for act in base_activities:
+                # Convertir la date Strava en datetime sans fuseau horaire pour la comparaison
+                activity_date = datetime.fromisoformat(act["start_date"].replace("Z", "+00:00"))
+                # Supprimer le fuseau horaire pour la comparaison avec la date de la base
+                activity_date_naive = activity_date.replace(tzinfo=None)
+                if activity_date_naive > latest_date:
+                    new_activities.append(act)
+        else:
+            # Première synchronisation : prendre toutes les activités
+            new_activities = base_activities
+        
+        print(f"Nombre de nouvelles activités à synchroniser: {len(new_activities)}")
+        
+        total_new = len(new_activities)
+        successful_syncs = 0
+        
+        # Récupération des détails et sauvegarde intelligente
+        for i, act in enumerate(new_activities):
+            activity_id = act.get("id")
+            if not activity_id:
+                continue
+            
+            try:
+                full_data = fetch_full_activity_details(token, activity_id)
+                if full_data:
+                    result = save_activities(db, athlete_id, [full_data])
+                    successful_syncs += result["new_activities"]
+                
+                # Délai réduit entre les requêtes
+                time.sleep(0.2)
+                
+            except Exception as e:
+                print(f"Erreur sur l'activité {i+1}: {str(e)}")
+                continue
+        
+        # Récupération du résumé des activités
+        summary = get_activities_summary(db, athlete_id)
+        
+        print(f"Synchronisation terminée: {successful_syncs} activités synchronisées")
+        
+        return {
+            "status": "OK",
+            "sync_info": {
+                "total_activities_in_strava": len(base_activities),
+                "new_activities_found": total_new,
+                "successfully_synced": successful_syncs,
+                "last_sync_date": latest_date.isoformat() if latest_date else None
+            },
+            "summary": summary,
+            "message": f"Synchronisation intelligente terminée : {successful_syncs} nouvelles activités ajoutées"
+        }
+        
+    except Exception as e:
+        print(f"Erreur lors de la synchronisation intelligente: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Erreur lors de la synchronisation intelligente : {str(e)}")
+
+@router.get("/strava/stats")
+def get_activities_stats(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """
+    Récupère les statistiques des activités synchronisées.
+    """
+    try:
+        athlete_id = get_athlete_id_from_token(db, current_user)
+        
+        # Récupération des statistiques
+        summary = get_activities_summary(db, athlete_id)
+        latest_date = get_latest_activity_date(db, athlete_id)
+        
+        return {
+            "status": "OK",
+            "stats": {
+                "total_activities": summary["total_activities"],
+                "latest_activity_date": latest_date.isoformat() if latest_date else None,
+                "activity_types": summary["activity_types"],
+                "total_distance_km": round(summary["total_distance"] / 1000, 2) if summary["total_distance"] else 0,
+                "total_time_hours": round(summary["total_time"] / 3600, 2) if summary["total_time"] else 0,
+                "average_distance_per_activity": round((summary["total_distance"] / 1000) / summary["total_activities"], 2) if summary["total_activities"] > 0 else 0
+            }
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erreur lors de la récupération des statistiques : {str(e)}")
+
+@router.get("/strava/recent-activities")
+def get_recent_activities(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """
+    Récupère les 5 dernières activités de l'utilisateur connecté.
+    """
+    try:
+        athlete_id = get_athlete_id_from_token(db, current_user)
+        
+        # Récupération des 5 dernières activités
+        recent_activities = db.query(StravaActivity).filter_by(athlete_id=athlete_id)\
+            .order_by(StravaActivity.start_date.desc())\
+            .limit(5)\
+            .all()
+        
+        activities_list = []
+        for activity in recent_activities:
+            activities_list.append({
+                "id": activity.activity_id,
+                "name": activity.name,
+                "type": activity.type,
+                "start_date": activity.start_date.isoformat(),
+                "distance_km": round(activity.distance / 1000, 2) if activity.distance else 0,
+                "moving_time_minutes": round(activity.moving_time / 60, 1) if activity.moving_time else 0,
+                "total_elevation_gain": round(activity.total_elevation_gain, 0) if activity.total_elevation_gain else 0,
+                "average_speed_kmh": round(activity.average_speed * 3.6, 1) if activity.average_speed else 0,
+                "effort_score": round(activity.effort_score, 2) if activity.effort_score else 0
+            })
+        
+        return {
+            "status": "OK",
+            "activities": activities_list
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erreur lors de la récupération des activités récentes : {str(e)}")
+
+@router.get("/strava/activity/{activity_id}/heart-rate-zones")
+def get_activity_heart_rate_zones(
+    activity_id: int, 
+    db: Session = Depends(get_db), 
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Récupère les zones cardiaques d'une activité spécifique.
+    """
+    try:
+        athlete_id = get_athlete_id_from_token(db, current_user)
+        
+        # Récupération de l'activité
+        activity = db.query(StravaActivity).filter_by(
+            athlete_id=athlete_id,
+            activity_id=activity_id
+        ).first()
+        
+        if not activity:
+            raise HTTPException(status_code=404, detail="Activité non trouvée")
+        
+        # Préparation des données de zones
+        zone_data = {
+            "zone_1": {
+                "time_minutes": activity.zone_1_time or 0,
+                "description": "Récupération - Régénération et récupération"
+            },
+            "zone_2": {
+                "time_minutes": activity.zone_2_time or 0,
+                "description": "Endurance - Développement de l'endurance de base"
+            },
+            "zone_3": {
+                "time_minutes": activity.zone_3_time or 0,
+                "description": "Aérobie - Amélioration de la capacité aérobie"
+            },
+            "zone_4": {
+                "time_minutes": activity.zone_4_time or 0,
+                "description": "Seuil - Développement du seuil anaérobie"
+            },
+            "zone_5": {
+                "time_minutes": activity.zone_5_time or 0,
+                "description": "Anaérobie - Développement de la puissance maximale"
+            },
+            "below_zone_1": {
+                "time_minutes": activity.below_zone_1_time or 0,
+                "description": "En dessous de la zone 1"
+            },
+            "above_zone_5": {
+                "time_minutes": activity.above_zone_5_time or 0,
+                "description": "Au-dessus de la zone 5"
+            }
+        }
+        
+        # Calcul du temps total
+        total_time = sum(zone["time_minutes"] for zone in zone_data.values())
+        
+        # Calcul des pourcentages
+        for zone in zone_data.values():
+            zone["percentage"] = round((zone["time_minutes"] / total_time) * 100, 1) if total_time > 0 else 0
+        
+        return {
+            "status": "OK",
+            "activity_id": activity_id,
+            "activity_name": activity.name,
+            "total_time_minutes": round(total_time, 1),
+            "effort_score": activity.effort_score or 0,
+            "zones": zone_data
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erreur lors de la récupération des zones cardiaques : {str(e)}")

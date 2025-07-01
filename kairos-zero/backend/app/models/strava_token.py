@@ -1,7 +1,8 @@
-from sqlalchemy import Column, Integer, String, BigInteger
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy import Column, Integer, String, BigInteger, ForeignKey
+from sqlalchemy.orm import relationship
+from app.database import Base
+import requests
 
-Base = declarative_base()
 
 class StravaToken(Base):
     __tablename__ = "strava_tokens"
@@ -11,9 +12,11 @@ class StravaToken(Base):
     access_token = Column(String, nullable=False)
     refresh_token = Column(String, nullable=False)
     expires_at = Column(BigInteger, nullable=False)
+    
+    # Relation avec l'utilisateur
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)  # Nullable pour migration
+    user = relationship("User", back_populates="strava_token")
 
-
-import requests
 
 def get_athlete_id_from_token(access_token: str) -> int:
     """

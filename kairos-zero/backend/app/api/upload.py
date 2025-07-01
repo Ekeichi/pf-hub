@@ -28,9 +28,11 @@ async def upload_gpx_file(file: UploadFile = File(...)):
     logger.info(f"Tentative de sauvegarde du fichier : {filepath}")
 
     try:
-        # Utiliser un buffer pour lire le fichier par morceaux (plus sûr pour les gros fichiers)
-        with open(filepath, "wb") as buffer:
+        # Lire le contenu du fichier
         content = await file.read()
+        
+        # Utiliser un buffer pour écrire le fichier
+        with open(filepath, "wb") as buffer:
             buffer.write(content)
         
         file_size = os.path.getsize(filepath)

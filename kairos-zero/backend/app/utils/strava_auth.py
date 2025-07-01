@@ -2,19 +2,21 @@ from fastapi import Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.strava_token import StravaToken
+from app.models.user import User
+from app.dependencies.auth import get_current_user
 import requests
 import time
 from app.config import STRAVA_CLIENT_ID, STRAVA_CLIENT_SECRET
 
-def refresh_strava_token_if_needed(db: Session) -> str:
+def refresh_strava_token_if_needed(db: Session, user_id: int) -> str:
     """
     Vérifie si le token Strava est expiré et le rafraîchit si nécessaire.
-    Retourne le token d'accès valide.
+    Retourne le token d'accès valide pour l'utilisateur spécifié.
     """
-    token_entry = db.query(StravaToken).order_by(StravaToken.id.desc()).first()
+    token_entry = db.query(StravaToken).filter_by(user_id=user_id).first()
     
     if not token_entry:
-        raise HTTPException(status_code=401, detail="Aucun token Strava trouvé. Veuillez vous reconnecter.")
+        raise HTTPException(status_code=401, detail="Aucun token Strava trouvé pour cet utilisateur. Veuillez vous reconnecter.")
     
     # Vérifier si le token est expiré (avec une marge de 5 minutes)
     current_time = int(time.time())
@@ -46,16 +48,19 @@ def refresh_strava_token_if_needed(db: Session) -> str:
     
     return token_entry.access_token
 
-def get_current_token(db: Session = Depends(get_db)) -> str:
+def get_current_token(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)) -> str:
     """
-    Récupère le token d'accès Strava actuel, en le rafraîchissant si nécessaire.
+    Récupère le token d'accès Strava actuel pour l'utilisateur connecté, en le rafraîchissant si nécessaire.
     """
-    return refresh_strava_token_if_needed(db)
+    return refresh_strava_token_if_needed(db, current_user.id)
 
-def get_athlete_id_from_token(db: Session = Depends(get_db)) -> int:
-    token_entry = db.query(StravaToken).order_by(StravaToken.id.desc()).first()
+def get_athlete_id_from_token(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)) -> int:
+    """
+    Récupère l'athlete_id Strava de l'utilisateur connecté.
+    """
+    token_entry = db.query(StravaToken).filter_by(user_id=current_user.id).first()
     if not token_entry or not token_entry.athlete_id:
-        raise HTTPException(status_code=401, detail="No athlete ID found")
+        raise HTTPException(status_code=401, detail="Aucun compte Strava lié trouvé pour cet utilisateur")
     return token_entry.athlete_id
 
 def get_latest_athlete_id(db):
