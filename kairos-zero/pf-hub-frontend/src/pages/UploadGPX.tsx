@@ -10,6 +10,7 @@ const UploadGPX: React.FC = () => {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [dragActive, setDragActive] = useState(false);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0];
@@ -19,6 +20,33 @@ const UploadGPX: React.FC = () => {
     } else {
       setError('Veuillez sélectionner un fichier GPX valide');
       setFile(null);
+    }
+  };
+
+  const handleDrag = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(true);
+    } else if (e.type === "dragleave") {
+      setDragActive(false);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+    
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      const droppedFile = e.dataTransfer.files[0];
+      if (droppedFile.name.endsWith('.gpx')) {
+        setFile(droppedFile);
+        setError(null);
+      } else {
+        setError('Veuillez sélectionner un fichier GPX valide');
+        setFile(null);
+      }
     }
   };
 
@@ -41,7 +69,8 @@ const UploadGPX: React.FC = () => {
       });
 
       if (!response.ok) {
-        throw new Error('Erreur lors de l\'upload du fichier');
+        const errorText = await response.text();
+        throw new Error(`Erreur lors de l'upload du fichier: ${response.status} ${errorText}`);
       }
 
       const result = await response.json();
@@ -54,111 +83,377 @@ const UploadGPX: React.FC = () => {
 
     } catch (err) {
       setError('Erreur lors de l\'upload du fichier GPX');
-      console.error(err);
     } finally {
       setUploading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white p-6">
-      <div className="max-w-2xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-4">Upload de fichier GPX</h1>
-          <p className="text-gray-400">
-            Téléchargez votre fichier GPX pour obtenir une prédiction de performance
-          </p>
-        </div>
-
-        <div className="bg-gray-800 rounded-lg p-8">
-          <div className="mb-6">
-            <label className="block text-sm font-medium mb-2">
-              Sélectionner un fichier GPX
-            </label>
-            <input
-              type="file"
-              accept=".gpx"
-              onChange={handleFileChange}
-              className="block w-full text-sm text-gray-400
-                file:mr-4 file:py-2 file:px-4
-                file:rounded-full file:border-0
-                file:text-sm file:font-semibold
-                file:bg-orange-500 file:text-white
-                hover:file:bg-orange-600
-                file:cursor-pointer"
-            />
+    <div className="container">
+      <main style={{ paddingTop: 'var(--header-height)', minHeight: 'calc(100vh - var(--header-height))' }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '2rem' }}>
+          {/* Header */}
+          <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
+            <div style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: '48px',
+              height: '48px',
+              background: 'linear-gradient(135deg, #ff6b35, #f7931e)',
+              borderRadius: '50%',
+              marginBottom: '1rem',
+              boxShadow: '0 4px 6px rgba(0, 0, 0, 0.3)'
+            }}>
+              <svg style={{ width: '24px', height: '24px', color: 'white' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+              </svg>
+            </div>
+            <h1 style={{ marginBottom: '1rem' }}>Upload de fichier GPX</h1>
+            <p style={{ color: 'var(--color-text-secondary)', fontSize: '1.1rem', maxWidth: '600px', margin: '0 auto' }}>
+              Téléchargez votre fichier GPX pour obtenir une prédiction de performance personnalisée
+            </p>
           </div>
 
-          {file && (
-            <div className="mb-6 p-4 bg-gray-700 rounded-lg">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium">{file.name}</p>
-                  <p className="text-sm text-gray-400">
-                    {(file.size / 1024 / 1024).toFixed(2)} MB
-                  </p>
+          {/* Main Upload Area */}
+          <div style={{
+            background: 'rgba(255, 255, 255, 0.05)',
+            border: '1px solid var(--color-border)',
+            borderRadius: '12px',
+            padding: '2rem',
+            marginBottom: '2rem',
+            boxShadow: '0 4px 6px rgba(0, 0, 0, 0.3)',
+            backdropFilter: 'blur(10px)'
+          }}>
+            {/* Drag & Drop Zone */}
+            <div style={{ marginBottom: '2rem' }}>
+              <div
+                style={{
+                  position: 'relative',
+                  border: '2px dashed',
+                  borderColor: dragActive ? '#ff6b35' : 'var(--color-border)',
+                  borderRadius: '12px',
+                  padding: '3rem',
+                  textAlign: 'center',
+                  transition: 'all 0.3s ease',
+                  backgroundColor: dragActive ? 'rgba(255, 107, 53, 0.1)' : 'rgba(255, 255, 255, 0.02)',
+                  cursor: 'pointer'
+                }}
+                onDragEnter={handleDrag}
+                onDragLeave={handleDrag}
+                onDragOver={handleDrag}
+                onDrop={handleDrop}
+              >
+                <input
+                  type="file"
+                  accept=".gpx"
+                  onChange={handleFileChange}
+                  style={{
+                    position: 'absolute',
+                    inset: 0,
+                    width: '100%',
+                    height: '100%',
+                    opacity: 0,
+                    cursor: 'pointer'
+                  }}
+                />
+                
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
+                  <div style={{
+                    width: '48px',
+                    height: '48px',
+                    background: 'linear-gradient(135deg, #ff6b35, #f7931e)',
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    margin: '0 auto'
+                  }}>
+                    <svg style={{ width: '24px', height: '24px', color: 'white' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                    </svg>
+                  </div>
+                  
+                  <div>
+                    <p style={{ fontSize: '1.2rem', fontWeight: '600', marginBottom: '0.5rem' }}>
+                      {dragActive ? 'Déposez votre fichier ici' : 'Glissez-déposez votre fichier GPX'}
+                    </p>
+                    <p style={{ color: 'var(--color-text-secondary)', marginBottom: '1rem' }}>
+                      ou cliquez pour sélectionner un fichier
+                    </p>
+                    <div style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      padding: '0.5rem 1rem',
+                      backgroundColor: 'rgba(255, 107, 53, 0.1)',
+                      border: '1px solid rgba(255, 107, 53, 0.3)',
+                      borderRadius: '8px',
+                      color: '#ff6b35',
+                      fontSize: '0.9rem'
+                    }}>
+                      <svg style={{ width: '16px', height: '16px', marginRight: '0.5rem' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                      Format GPX uniquement
+                    </div>
+                  </div>
                 </div>
-                <button
-                  onClick={() => setFile(null)}
-                  className="text-red-400 hover:text-red-300"
-                >
-                  ✕
-                </button>
               </div>
             </div>
-          )}
 
-          {error && (
-            <div className="mb-6 p-4 bg-red-900 border border-red-700 rounded-lg">
-              <p className="text-red-300">{error}</p>
-            </div>
-          )}
-
-          {success && (
-            <div className="mb-6 p-4 bg-green-900 border border-green-700 rounded-lg">
-              <p className="text-green-300">
-                Fichier uploadé avec succès ! Redirection vers les résultats...
-              </p>
-            </div>
-          )}
-
-          <div className="flex gap-4">
-            <button
-              onClick={handleUpload}
-              disabled={!file || uploading}
-              className="flex-1 bg-orange-500 hover:bg-orange-600 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200"
-            >
-              {uploading ? (
-                <div className="flex items-center justify-center gap-2">
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  Upload en cours...
+            {/* File Preview */}
+            {file && (
+              <div style={{ marginBottom: '2rem' }}>
+                <div style={{
+                  background: 'linear-gradient(135deg, rgba(34, 197, 94, 0.1), rgba(59, 130, 246, 0.1))',
+                  border: '1px solid rgba(34, 197, 94, 0.3)',
+                  borderRadius: '12px',
+                  padding: '1.5rem'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                      <div style={{
+                        width: '32px',
+                        height: '32px',
+                        backgroundColor: '#22c55e',
+                        borderRadius: '8px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}>
+                        <svg style={{ width: '16px', height: '16px', color: 'white' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </div>
+                      <div>
+                        <p style={{ fontWeight: '600', fontSize: '1.1rem', marginBottom: '0.25rem' }}>{file.name}</p>
+                        <p style={{ color: 'var(--color-text-secondary)' }}>
+                          {(file.size / 1024 / 1024).toFixed(2)} MB • Prêt pour l'analyse
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setFile(null)}
+                      style={{
+                        padding: '0.5rem',
+                        backgroundColor: 'transparent',
+                        border: 'none',
+                        color: '#ef4444',
+                        cursor: 'pointer',
+                        borderRadius: '8px',
+                        transition: 'all 0.2s ease'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.1)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = 'transparent';
+                      }}
+                    >
+                      <svg style={{ width: '20px', height: '20px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
                 </div>
-              ) : (
-                'Uploader et analyser'
-              )}
-            </button>
+              </div>
+            )}
 
-            <button
-              onClick={() => navigate('/dashboard')}
-              className="px-6 py-3 bg-gray-700 hover:bg-gray-600 text-white font-semibold rounded-lg transition-colors duration-200"
-            >
-              Annuler
-            </button>
+            {/* Error Message */}
+            {error && (
+              <div style={{ marginBottom: '1.5rem' }}>
+                <div style={{
+                  backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                  border: '1px solid rgba(239, 68, 68, 0.3)',
+                  borderRadius: '12px',
+                  padding: '1rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.75rem'
+                }}>
+                  <svg style={{ width: '24px', height: '24px', color: '#ef4444', flexShrink: 0 }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <p style={{ color: '#ef4444', margin: 0 }}>{error}</p>
+                </div>
+              </div>
+            )}
+
+            {/* Success Message */}
+            {success && (
+              <div style={{ marginBottom: '1.5rem' }}>
+                <div style={{
+                  backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                  border: '1px solid rgba(34, 197, 94, 0.3)',
+                  borderRadius: '12px',
+                  padding: '1rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.75rem'
+                }}>
+                  <svg style={{ width: '24px', height: '24px', color: '#22c55e', flexShrink: 0 }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <p style={{ color: '#22c55e', margin: 0 }}>
+                    Fichier uploadé avec succès ! Redirection vers les résultats...
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Action Buttons */}
+            <div style={{ display: 'flex', gap: '1rem' }}>
+              <button
+                onClick={handleUpload}
+                disabled={!file || uploading}
+                className="btn primary"
+                style={{
+                  flex: 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.75rem',
+                  opacity: (!file || uploading) ? 0.6 : 1,
+                  cursor: (!file || uploading) ? 'not-allowed' : 'pointer'
+                }}
+              >
+                {uploading ? (
+                  <>
+                    <div className="loading" style={{ width: '20px', height: '20px' }}></div>
+                    <span>Analyse en cours...</span>
+                  </>
+                ) : (
+                  <>
+                    <svg style={{ width: '20px', height: '20px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                    <span>Analyser et prédire</span>
+                  </>
+                )}
+              </button>
+
+              <button
+                onClick={() => navigate('/dashboard')}
+                className="btn secondary"
+              >
+                Annuler
+              </button>
+            </div>
+          </div>
+
+          {/* Instructions Card */}
+          <div style={{
+            background: 'rgba(255, 255, 255, 0.05)',
+            border: '1px solid var(--color-border)',
+            borderRadius: '12px',
+            padding: '2rem',
+            boxShadow: '0 4px 6px rgba(0, 0, 0, 0.3)',
+            backdropFilter: 'blur(10px)'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '1.5rem' }}>
+              <div style={{
+                width: '32px',
+                height: '32px',
+                backgroundColor: '#3b82f6',
+                borderRadius: '8px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginRight: '0.75rem'
+              }}>
+                <svg style={{ width: '16px', height: '16px', color: 'white' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <h2 style={{ margin: 0 }}>Instructions</h2>
+            </div>
+            
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
+                  <div style={{
+                    width: '20px',
+                    height: '20px',
+                    backgroundColor: '#22c55e',
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                    marginTop: '2px'
+                  }}>
+                    <svg style={{ width: '12px', height: '12px', color: 'white' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  <p style={{ color: 'var(--color-text-secondary)', margin: 0 }}>Le fichier doit être au format GPX</p>
+                </div>
+                
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
+                  <div style={{
+                    width: '20px',
+                    height: '20px',
+                    backgroundColor: '#22c55e',
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                    marginTop: '2px'
+                  }}>
+                    <svg style={{ width: '12px', height: '12px', color: 'white' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  <p style={{ color: 'var(--color-text-secondary)', margin: 0 }}>Assurez-vous que le fichier contient des données GPS valides</p>
+                </div>
+              </div>
+              
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
+                  <div style={{
+                    width: '20px',
+                    height: '20px',
+                    backgroundColor: '#22c55e',
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                    marginTop: '2px'
+                  }}>
+                    <svg style={{ width: '12px', height: '12px', color: 'white' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  <p style={{ color: 'var(--color-text-secondary)', margin: 0 }}>La taille maximale est de 10 MB</p>
+                </div>
+                
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
+                  <div style={{
+                    width: '20px',
+                    height: '20px',
+                    backgroundColor: '#22c55e',
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                    marginTop: '2px'
+                  }}>
+                    <svg style={{ width: '12px', height: '12px', color: 'white' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  <p style={{ color: 'var(--color-text-secondary)', margin: 0 }}>L'analyse peut prendre quelques secondes</p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
-
-        <div className="mt-8 bg-gray-800 rounded-lg p-6">
-          <h2 className="text-xl font-semibold mb-4">Instructions</h2>
-          <ul className="space-y-2 text-gray-400">
-            <li>• Le fichier doit être au format GPX</li>
-            <li>• Assurez-vous que le fichier contient des données GPS valides</li>
-            <li>• La taille maximale est de 10 MB</li>
-            <li>• L'analyse peut prendre quelques secondes</li>
-          </ul>
-        </div>
-      </div>
+      </main>
     </div>
   );
 };
 
-export default UploadGPX;
+export default UploadGPX; 

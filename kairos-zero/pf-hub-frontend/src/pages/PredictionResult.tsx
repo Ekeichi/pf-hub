@@ -39,136 +39,187 @@ const PredictionResult: React.FC = () => {
 
   const getDifficultyColor = (difficulty: string): string => {
     const colors = {
-      'Facile': 'text-green-400',
-      'Modéré': 'text-yellow-400',
-      'Difficile': 'text-orange-400',
-      'Très difficile': 'text-red-400'
+      'Facile': '#22c55e',
+      'Modéré': '#eab308',
+      'Difficile': '#f97316',
+      'Très difficile': '#ef4444'
     };
-    return colors[difficulty as keyof typeof colors] || 'text-gray-400';
+    return colors[difficulty as keyof typeof colors] || 'var(--color-text-secondary)';
   };
 
   const getConfidenceColor = (confidence: number): string => {
-    if (confidence >= 80) return 'text-green-400';
-    if (confidence >= 60) return 'text-yellow-400';
-    return 'text-red-400';
+    if (confidence >= 80) return '#22c55e';
+    if (confidence >= 60) return '#eab308';
+    return '#ef4444';
   };
 
   if (!prediction) {
     return (
-      <div className="min-h-screen bg-gray-900 text-white p-6">
-        <div className="max-w-4xl mx-auto text-center">
-          <h1 className="text-3xl font-bold mb-4">Aucun résultat disponible</h1>
-          <p className="text-gray-400 mb-8">
-            Aucune prédiction n'a été trouvée. Veuillez uploader un fichier GPX.
-          </p>
-          <button
-            onClick={() => navigate('/upload-gpx')}
-            className="bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200"
-          >
-            Uploader un fichier GPX
-          </button>
-        </div>
+      <div className="container">
+        <main style={{ paddingTop: 'var(--header-height)', minHeight: 'calc(100vh - var(--header-height))' }}>
+          <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '2rem', textAlign: 'center' }}>
+            <h1 style={{ marginBottom: '1rem' }}>Aucun résultat disponible</h1>
+            <p style={{ color: 'var(--color-text-secondary)', marginBottom: '2rem' }}>
+              Aucune prédiction n'a été trouvée. Veuillez uploader un fichier GPX.
+            </p>
+            <button
+              onClick={() => navigate('/upload-gpx')}
+              className="btn primary"
+            >
+              Uploader un fichier GPX
+            </button>
+          </div>
+        </main>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white p-6">
-      <div className="max-w-4xl mx-auto">
-        <div className="flex items-center justify-between mb-8">
-          <h1 className="text-3xl font-bold">Résultats de la prédiction</h1>
-          <button
-            onClick={() => navigate('/dashboard')}
-            className="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg transition-colors"
-          >
-            Retour au dashboard
-          </button>
-        </div>
+    <div className="container">
+      <main style={{ paddingTop: 'var(--header-height)', minHeight: 'calc(100vh - var(--header-height))' }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '2rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2rem' }}>
+            <h1>Résultats de la prédiction</h1>
+            <button
+              onClick={() => navigate('/dashboard')}
+              className="btn secondary"
+            >
+              Retour au dashboard
+            </button>
+          </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Prédiction principale */}
-          <div className="bg-gray-800 rounded-lg p-6">
-            <h2 className="text-2xl font-semibold mb-6">Prédiction de temps</h2>
-            <div className="text-center">
-              <div className="text-6xl font-bold text-orange-500 mb-4">
-                {prediction.predicted_time ? formatTime(prediction.predicted_time) : 'N/A'}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '2rem', marginBottom: '2rem' }}>
+            {/* Prédiction principale */}
+            <div style={{
+              background: 'rgba(255, 255, 255, 0.05)',
+              border: '1px solid var(--color-border)',
+              borderRadius: '12px',
+              padding: '2rem',
+              boxShadow: '0 4px 6px rgba(0, 0, 0, 0.3)',
+              backdropFilter: 'blur(10px)'
+            }}>
+              <h2 style={{ marginBottom: '1.5rem' }}>Prédiction de temps</h2>
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: '3rem', fontWeight: 'bold', color: '#ff6b35', marginBottom: '1rem' }}>
+                  {prediction.predicted_time ? formatTime(prediction.predicted_time) : 'N/A'}
+                </div>
+                <div style={{ color: 'var(--color-text-secondary)' }}>
+                  Temps estimé pour compléter le parcours
+                </div>
               </div>
-              <div className="text-gray-400">
-                Temps estimé pour compléter le parcours
+            </div>
+
+            {/* Niveau de confiance */}
+            <div style={{
+              background: 'rgba(255, 255, 255, 0.05)',
+              border: '1px solid var(--color-border)',
+              borderRadius: '12px',
+              padding: '2rem',
+              boxShadow: '0 4px 6px rgba(0, 0, 0, 0.3)',
+              backdropFilter: 'blur(10px)'
+            }}>
+              <h2 style={{ marginBottom: '1.5rem' }}>Niveau de confiance</h2>
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ 
+                  fontSize: '3rem', 
+                  fontWeight: 'bold', 
+                  color: getConfidenceColor(prediction.confidence || 0),
+                  marginBottom: '1rem'
+                }}>
+                  {prediction.confidence ? `${prediction.confidence}%` : 'N/A'}
+                </div>
+                <div style={{ color: 'var(--color-text-secondary)' }}>
+                  Fiabilité de la prédiction
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Niveau de confiance */}
-          <div className="bg-gray-800 rounded-lg p-6">
-            <h2 className="text-2xl font-semibold mb-6">Niveau de confiance</h2>
-            <div className="text-center">
-              <div className={`text-6xl font-bold mb-4 ${getConfidenceColor(prediction.confidence || 0)}`}>
-                {prediction.confidence ? `${prediction.confidence}%` : 'N/A'}
+          {/* Détails du parcours */}
+          <div style={{
+            background: 'rgba(255, 255, 255, 0.05)',
+            border: '1px solid var(--color-border)',
+            borderRadius: '12px',
+            padding: '2rem',
+            marginBottom: '2rem',
+            boxShadow: '0 4px 6px rgba(0, 0, 0, 0.3)',
+            backdropFilter: 'blur(10px)'
+          }}>
+            <h2 style={{ marginBottom: '1.5rem' }}>Détails du parcours</h2>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem' }}>
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#3b82f6', marginBottom: '0.5rem' }}>
+                  {prediction.distance ? `${(prediction.distance / 1000).toFixed(1)} km` : 'N/A'}
+                </div>
+                <div style={{ color: 'var(--color-text-secondary)' }}>Distance</div>
               </div>
-              <div className="text-gray-400">
-                Fiabilité de la prédiction
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#22c55e', marginBottom: '0.5rem' }}>
+                  {prediction.elevation_gain ? `${prediction.elevation_gain}m` : 'N/A'}
+                </div>
+                <div style={{ color: 'var(--color-text-secondary)' }}>Dénivelé positif</div>
+              </div>
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ 
+                  fontSize: '2rem', 
+                  fontWeight: 'bold', 
+                  color: getDifficultyColor(prediction.difficulty || ''),
+                  marginBottom: '0.5rem'
+                }}>
+                  {prediction.difficulty || 'N/A'}
+                </div>
+                <div style={{ color: 'var(--color-text-secondary)' }}>Niveau de difficulté</div>
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Détails du parcours */}
-        <div className="mt-8 bg-gray-800 rounded-lg p-6">
-          <h2 className="text-2xl font-semibold mb-6">Détails du parcours</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="text-center">
-              <div className="text-3xl font-bold text-blue-400 mb-2">
-                {prediction.distance ? `${(prediction.distance / 1000).toFixed(1)} km` : 'N/A'}
-              </div>
-              <div className="text-gray-400">Distance</div>
+          {/* Recommandations */}
+          {prediction.recommendations && prediction.recommendations.length > 0 && (
+            <div style={{
+              background: 'rgba(255, 255, 255, 0.05)',
+              border: '1px solid var(--color-border)',
+              borderRadius: '12px',
+              padding: '2rem',
+              marginBottom: '2rem',
+              boxShadow: '0 4px 6px rgba(0, 0, 0, 0.3)',
+              backdropFilter: 'blur(10px)'
+            }}>
+              <h2 style={{ marginBottom: '1.5rem' }}>Recommandations</h2>
+              <ul style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                {prediction.recommendations.map((recommendation, index) => (
+                  <li key={index} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
+                    <div style={{
+                      width: '8px',
+                      height: '8px',
+                      backgroundColor: '#ff6b35',
+                      borderRadius: '50%',
+                      marginTop: '8px',
+                      flexShrink: 0
+                    }}></div>
+                    <span style={{ color: 'var(--color-text-secondary)' }}>{recommendation}</span>
+                  </li>
+                ))}
+              </ul>
             </div>
-            <div className="text-center">
-              <div className="text-3xl font-bold text-green-400 mb-2">
-                {prediction.elevation_gain ? `${prediction.elevation_gain}m` : 'N/A'}
-              </div>
-              <div className="text-gray-400">Dénivelé positif</div>
-            </div>
-            <div className="text-center">
-              <div className={`text-3xl font-bold mb-2 ${getDifficultyColor(prediction.difficulty || '')}`}>
-                {prediction.difficulty || 'N/A'}
-              </div>
-              <div className="text-gray-400">Niveau de difficulté</div>
-            </div>
+          )}
+
+          {/* Actions */}
+          <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
+            <button
+              onClick={() => navigate('/upload-gpx')}
+              className="btn primary"
+            >
+              Analyser un autre parcours
+            </button>
+            <button
+              onClick={() => navigate('/dashboard')}
+              className="btn secondary"
+            >
+              Retour au dashboard
+            </button>
           </div>
         </div>
-
-        {/* Recommandations */}
-        {prediction.recommendations && prediction.recommendations.length > 0 && (
-          <div className="mt-8 bg-gray-800 rounded-lg p-6">
-            <h2 className="text-2xl font-semibold mb-6">Recommandations</h2>
-            <ul className="space-y-3">
-              {prediction.recommendations.map((recommendation, index) => (
-                <li key={index} className="flex items-start gap-3">
-                  <div className="w-2 h-2 bg-orange-500 rounded-full mt-2 flex-shrink-0"></div>
-                  <span className="text-gray-300">{recommendation}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-        {/* Actions */}
-        <div className="mt-8 flex gap-4 justify-center">
-          <button
-            onClick={() => navigate('/upload-gpx')}
-            className="bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200"
-          >
-            Analyser un autre parcours
-          </button>
-          <button
-            onClick={() => navigate('/dashboard')}
-            className="bg-gray-700 hover:bg-gray-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200"
-          >
-            Retour au dashboard
-          </button>
-        </div>
-      </div>
+      </main>
     </div>
   );
 };

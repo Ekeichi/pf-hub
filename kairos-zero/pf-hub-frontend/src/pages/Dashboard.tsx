@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { ApiService } from '../services/apiService';
+import AnalyticsCharts from '../components/AnalyticsCharts';
 
 interface Activity {
   id: number;
@@ -23,6 +24,7 @@ const Dashboard: React.FC = () => {
   const [syncingActivities, setSyncingActivities] = useState(false);
   const [syncError, setSyncError] = useState<string | null>(null);
   const [autoSyncInProgress, setAutoSyncInProgress] = useState(false);
+  // Retirer les hooks et fonctions liés à la synchro simple
 
   const fetchRecentActivities = async () => {
     if (!user?.has_strava_linked) return;
@@ -70,6 +72,8 @@ const Dashboard: React.FC = () => {
       setAutoSyncInProgress(false);
     }
   };
+
+  // Supprimer le bouton de test synchro simple et l'affichage du résultat
 
   useEffect(() => {
     fetchRecentActivities();
@@ -392,51 +396,20 @@ const Dashboard: React.FC = () => {
             </div>
           )}
 
-          {/* Informations du compte */}
-          <div style={{ 
-            background: 'rgba(255, 255, 255, 0.05)', 
-            border: '1px solid var(--color-border)', 
-            borderRadius: '12px',
-            padding: '2rem',
-            boxShadow: '0 4px 6px rgba(0, 0, 0, 0.3)',
-            backdropFilter: 'blur(10px)'
-          }}>
-            <h2 style={{ marginBottom: '1.5rem' }}>Informations du compte</h2>
+          {/* Analyses de performance */}
+          {user?.has_strava_linked && (
             <div style={{ 
-              display: 'grid', 
-              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
-              gap: '1rem' 
+              background: 'rgba(255, 255, 255, 0.05)', 
+              border: '1px solid var(--color-border)', 
+              borderRadius: '12px',
+              padding: '2rem',
+              boxShadow: '0 4px 6px rgba(0, 0, 0, 0.3)',
+              backdropFilter: 'blur(10px)'
             }}>
-              <div>
-                <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.9rem' }}>Email</p>
-                <p style={{ fontWeight: '600' }}>{user?.email}</p>
-              </div>
-              <div>
-                <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.9rem' }}>Prénom</p>
-                <p style={{ fontWeight: '600' }}>{user?.firstname}</p>
-              </div>
-              <div>
-                <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.9rem' }}>Nom</p>
-                <p style={{ fontWeight: '600' }}>{user?.lastname}</p>
-              </div>
-              <div>
-                <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.9rem' }}>Méthode d'authentification</p>
-                <p style={{ fontWeight: '600' }}>{user?.auth_method}</p>
-              </div>
-              <div>
-                <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.9rem' }}>Compte créé le</p>
-                <p style={{ fontWeight: '600' }}>
-                  {user?.created_at ? new Date(user.created_at).toLocaleDateString('fr-FR') : '-'}
-                </p>
-              </div>
-              <div>
-                <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.9rem' }}>Charte acceptée</p>
-                <p style={{ fontWeight: '600' }}>
-                  {user?.charte_accepted ? 'Oui' : 'Non'}
-                </p>
-              </div>
+              <h2 style={{ marginBottom: '1.5rem' }}>Analyses de performance</h2>
+              <AnalyticsCharts />
             </div>
-          </div>
+          )}
         </div>
       </main>
     </div>

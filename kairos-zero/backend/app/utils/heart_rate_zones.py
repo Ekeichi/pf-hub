@@ -43,7 +43,7 @@ def calculate_heart_rate_zones(heartrate_data: str, max_hr: int = None) -> Dict:
         
         # Si pas de FCMax fournie, on utilise la valeur max des données
         if not max_hr:
-            max_hr = max(heartrate_values) if heartrate_values else 200
+            max_hr = 194
         
         # Définition des zones (en % de FCMax)
         zones = {
@@ -160,7 +160,7 @@ def calculate_training_load(zone_data: Dict) -> Dict:
     
     for zone, data in zone_data["zones"].items():
         if zone in trimp_coefficients:
-            time_hours = data["time_minutes"] / 60
+            time_hours = data["time_seconds"] / 3600
             total_trimp += time_hours * trimp_coefficients[zone]
             total_time += time_hours
     
@@ -176,7 +176,7 @@ def calculate_training_load(zone_data: Dict) -> Dict:
 def calculate_effort_score(zone_data: Dict) -> float:
     """
     Calcule le score d'effort relatif basé sur les zones cardiaques.
-    Utilise la formule : sum((temps_zone/60) * exp(poids_zone))
+    Utilise la formule : sum((temps_zone_en_heures) * exp(poids_zone))
     
     Args:
         zone_data: Données des zones cardiaques calculées
@@ -189,13 +189,13 @@ def calculate_effort_score(zone_data: Dict) -> float:
     
     # Pondérations pour chaque zone (exponentielles pour favoriser les zones élevées)
     zone_weights = {
-        "zone_1": 0.5,      # Récupération
-        "zone_2": 1.0,      # Endurance
-        "zone_3": 1.5,      # Aérobie
-        "zone_4": 2.0,      # Seuil
-        "zone_5": 2.5,      # Anaérobie
+        "zone_1": 1.0,      # Récupération
+        "zone_2": 2.0,      # Endurance
+        "zone_3": 3.0,      # Aérobie
+        "zone_4": 4.0,      # Seuil
+        "zone_5": 5.0,      # Anaérobie
         "below_zone_1": 0.0, # En dessous zone 1 (pas d'effort)
-        "above_zone_5": 3.0  # Au-dessus zone 5 (effort maximal)
+        "above_zone_5": 6.0  # Au-dessus zone 5 (effort maximal)
     }
     
     import math
@@ -204,10 +204,9 @@ def calculate_effort_score(zone_data: Dict) -> float:
     
     for zone, data in zone_data["zones"].items():
         if zone in zone_weights:
-            time_minutes = data.get("time_minutes", 0)
+            time_hours = data.get("time_seconds", 0) / 3600
             weight = zone_weights[zone]
-            
-            # Calcul selon la formule : (temps_zone/60) * exp(poids_zone)
-            effort_score += (time_minutes / 60) * math.exp(weight)
+            # Calcul selon la formule : (temps_zone_en_heures) * exp(poids_zone)
+            effort_score += time_hours * math.exp(weight)
     
     return round(effort_score, 2) 

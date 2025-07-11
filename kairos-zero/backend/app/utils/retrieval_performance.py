@@ -122,33 +122,58 @@ def get_running_records_from_db(db: Session, athlete_id: int) -> Dict[str, str]:
         Dict[str, str]: Dictionnaire {distance_en_mètres: temps_formatté}
     """
     records = {}
-
+    
+    print(f"Recherche des records pour l'athlète {athlete_id}")
+    
     activities = db.query(StravaActivity).filter_by(athlete_id=athlete_id).all()
+    print(f"Nombre d'activités trouvées: {len(activities)}")
 
     for activity in activities:
+        print(f"Activité {activity.id}: best_efforts = {activity.best_efforts[:100] if activity.best_efforts else 'None'}...")
+        
         if not activity.best_efforts:
+            print(f"  -> Pas de best_efforts, on passe")
             continue
 
         try:
             best_efforts = json.loads(activity.best_efforts)
+            print(f"  -> {len(best_efforts)} best_efforts parsés")
+            
             for effort in best_efforts:
                 name = effort.get("name")
                 elapsed_time = effort.get("elapsed_time")
+                
+                print(f"    Effort: {name} en {elapsed_time}s")
 
                 if not name or elapsed_time is None:
+                    print(f"      -> Nom ou temps manquant, on passe")
                     continue
 
                 distance_m = convert_distance_to_meters(name)
+                print(f"      -> Distance convertie: {distance_m}m")
+                
                 if distance_m <= 0:
+                    print(f"      -> Distance invalide, on passe")
                     continue
 
                 key = f"{distance_m}m"
                 current_best = records.get(key)
+                
+                formatted_time = format_time(elapsed_time)
+                print(f"      -> Temps formaté: {formatted_time}")
 
                 if current_best is None or elapsed_time < time_str_to_seconds(current_best):
-                    records[key] = format_time(elapsed_time)
+                    records[key] = formatted_time
+                    print(f"      -> NOUVEAU RECORD pour {key}: {formatted_time}")
+                else:
+                    print(f"      -> Pas un record (actuel: {current_best})")
 
-        except json.JSONDecodeError:
+        except json.JSONDecodeError as e:
+            print(f"  -> Erreur JSON: {e}")
+            continue
+        except Exception as e:
+            print(f"  -> Erreur inattendue: {e}")
             continue
 
+    print(f"Records finaux trouvés: {records}")
     return records

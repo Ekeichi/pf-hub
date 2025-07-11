@@ -22,9 +22,18 @@ MPS_TO_MIN_PER_KM = 16.67
 
 def extract_arrays(row):
     try:
-        elev = json.loads(row["elevation_data"])
-        pace = json.loads(row["pace_data"])
-        hr = json.loads(row["heartrate_data"])
+        # Les données peuvent être soit des chaînes JSON soit des dictionnaires Python
+        elev = row["elevation_data"]
+        pace = row["pace_data"]
+        hr = row["heartrate_data"]
+        
+        # Si ce sont des chaînes JSON, les parser
+        if isinstance(elev, str):
+            elev = json.loads(elev)
+        if isinstance(pace, str):
+            pace = json.loads(pace)
+        if isinstance(hr, str):
+            hr = json.loads(hr)
 
         if not all(k in elev for k in ("distance", "altitude")): return None
         if not all(k in pace for k in ("time", "distance")): return None
@@ -65,11 +74,15 @@ def extract_arrays(row):
 
 
 def elev_func(df, vitesse_plat):
-    # plus de lecture CSV ici
     df = df.dropna(subset=["elevation_data", "pace_data", "heartrate_data"])
 
     extracted = df.apply(extract_arrays, axis=1)
     extracted = extracted.dropna()
+    
+    # Vérifier qu'on a des données valides
+    if len(extracted) == 0:
+        print("Aucune donnée valide extraite pour le modèle d'élévation")
+        return None, None
 
     all_pente = np.concatenate([x[0] for x in extracted]).reshape(-1, 1)
     all_vitesse = np.concatenate([x[1] for x in extracted]).reshape(-1, 1)
@@ -95,7 +108,8 @@ def elev_func(df, vitesse_plat):
     v_hr = v_hr[mask_p_realiste].reshape(-1, 1)
 
     if p_hr.shape[0] < POLYNOMIAL_DEGREE + 1:
-        return None
+        print(f"Pas assez de données pour l'apprentissage: {p_hr.shape[0]} points")
+        return None, None
 
     normalized_speed = v_hr / vitesse_plat
 
@@ -103,21 +117,31 @@ def elev_func(df, vitesse_plat):
     uphill = pd.DataFrame({'pente': p_hr.flatten(), 'vitesse': normalized_speed.flatten()})
     uphill = uphill[uphill['pente'] > 0]
     montees_valid = uphill[uphill['vitesse'] > 0]
-    montees_valid['ln_vitesse_norm'] = np.log(montees_valid['vitesse'])
-    X_montee = montees_valid[['pente']]
-    y_montee = montees_valid['ln_vitesse_norm']
-    reg_montee = LinearRegression().fit(X_montee, y_montee)
-    k1 = -reg_montee.coef_[0]
+    
+    if len(montees_valid) == 0:
+        print("Aucune donnée de montée valide")
+        k1 = 0.1  # Valeur par défaut
+    else:
+        montees_valid['ln_vitesse_norm'] = np.log(montees_valid['vitesse'])
+        X_montee = montees_valid[['pente']]
+        y_montee = montees_valid['ln_vitesse_norm']
+        reg_montee = LinearRegression().fit(X_montee, y_montee)
+        k1 = -reg_montee.coef_[0]
 
     # Regression linéaire downhill
     downhill = pd.DataFrame({'pente': p_hr.flatten(), 'vitesse': normalized_speed.flatten()})
     downhill = downhill[downhill['pente'] < 0]
     descentes_valid = downhill[downhill['vitesse'] > 0]
-    descentes_valid['ln_vitesse_norm'] = np.log(descentes_valid['vitesse'])
-    X_descente = descentes_valid[['pente']]
-    y_descente = descentes_valid['ln_vitesse_norm']
-    reg_descente = LinearRegression().fit(X_descente, y_descente)
-    k2 = -reg_descente.coef_[0]
+    
+    if len(descentes_valid) == 0:
+        print("Aucune donnée de descente valide")
+        k2 = 0.05  # Valeur par défaut
+    else:
+        descentes_valid['ln_vitesse_norm'] = np.log(descentes_valid['vitesse'])
+        X_descente = descentes_valid[['pente']]
+        y_descente = descentes_valid['ln_vitesse_norm']
+        reg_descente = LinearRegression().fit(X_descente, y_descente)
+        k2 = -reg_descente.coef_[0]
 
     return k1, k2
 

@@ -17,3 +17,17 @@ python-multipart
 
 # Validation des données
 pydantic[email]
+
+# Traitement GPX
+gpxpy
+
+# Calculs scientifiques
+numpy
+pandas
+matplotlib
+
+# Alembic pour les migrations
+alembic
+
+# Variables d'environnement
+python-dotenv

@@ -43,6 +43,7 @@ app.include_router(test.router, prefix="/api/test", tags=["Test"])
 app.include_router(upload.router, prefix="/api", tags=["Upload"])
 
 
+
 @app.get("/")
 def read_root():
     """Route racine de l'API."""

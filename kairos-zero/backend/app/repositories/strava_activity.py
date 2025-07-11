@@ -157,6 +157,26 @@ def save_activities(db: Session, athlete_id: int, activities: List[Dict]):
 
             segments_json = json.dumps(segments_data) if segments_data else None
 
+            # Calcul des zones cardiaques et du score d'effort (ajouté ici)
+            zone_data = None
+            effort_score = 0.0
+            zone_times = {
+                "zone_1_time": 0.0,
+                "zone_2_time": 0.0,
+                "zone_3_time": 0.0,
+                "zone_4_time": 0.0,
+                "zone_5_time": 0.0,
+                "below_zone_1_time": 0.0,
+                "above_zone_5_time": 0.0
+            }
+            if heartrate_json:
+                zone_data = calculate_heart_rate_zones(heartrate_json)
+                if zone_data and "zones" in zone_data:
+                    for zone_name, zone_info in zone_data["zones"].items():
+                        if zone_name in zone_times:
+                            zone_times[zone_name] = zone_info.get("time_minutes", 0.0)
+                    effort_score = calculate_effort_score(zone_data)
+
             # Création d'une nouvelle activité
             new_act = StravaActivity(
                 athlete_id=athlete_id,

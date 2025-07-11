@@ -70,6 +70,10 @@ export class ApiService {
     });
   }
 
+  static async syncStravaActivitiesSimple(): Promise<any> {
+    return this.makeRequest(`${API_BASE_URL}/strava/sync-simple`);
+  }
+
   // Récupérer les activités récentes
   static async getRecentActivities(): Promise<any> {
     const response = await fetch(`${API_BASE_URL}/strava/recent-activities`, {
@@ -100,6 +104,11 @@ export class ApiService {
     }
     
     return response.json();
+  }
+
+  // Récupérer les données d'analyse (ACWR et FFM)
+  static async getAnalytics(): Promise<any> {
+    return this.makeRequest(`${API_BASE_URL}/analytics`);
   }
 
   // Méthodes génériques pour les requêtes HTTP
