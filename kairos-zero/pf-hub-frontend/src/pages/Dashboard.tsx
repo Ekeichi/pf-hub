@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { ApiService } from '../services/apiService';
 import AnalyticsCharts from '../components/AnalyticsCharts';
@@ -17,7 +17,7 @@ interface Activity {
 }
 
 const Dashboard: React.FC = () => {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const [recentActivities, setRecentActivities] = useState<Activity[]>([]);
   const [loadingActivities, setLoadingActivities] = useState(false);
   const [syncingActivities, setSyncingActivities] = useState(false);
