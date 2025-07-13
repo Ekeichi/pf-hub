@@ -25,6 +25,7 @@ gpxpy
 numpy
 pandas
 matplotlib
+scikit-learn
 
 # Alembic pour les migrations
 alembic
