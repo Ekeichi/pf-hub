@@ -11,8 +11,8 @@ import os
 import secrets
 
 # Configuration Strava
-STRAVA_CLIENT_ID = os.environ.get("STRAVA_CLIENT_ID")
-STRAVA_CLIENT_SECRET = os.environ.get("STRAVA_CLIENT_SECRET")
+STRAVA_CLIENT_ID = os.environ.get("STRAVA_CLIENT_ID", "141778")  # Valeur par défaut pour les tests
+STRAVA_CLIENT_SECRET = os.environ.get("STRAVA_CLIENT_SECRET", "a334c280c5e9cd771d1a4659b58ce9e2cfe183f4")  # Valeur par défaut pour les tests
 
 # URL de redirection selon l'environnement
 ENVIRONMENT = os.environ.get("ENVIRONMENT", "development")
