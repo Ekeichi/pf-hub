@@ -31,7 +31,15 @@ app = FastAPI(
 # Configuration CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:5173"],  # Frontend React
+    allow_origins=[
+        "http://localhost:3000", 
+        "http://localhost:5173",
+        "https://pf-hub.vercel.app",  # URL de production Vercel
+        "https://pf-hub-frontend.vercel.app",  # URL alternative possible
+        "https://*.vercel.app",  # Tous les sous-domaines Vercel
+        "https://pf-hub-frontend.onrender.com",  # URL de production Render
+        "https://*.onrender.com"  # Tous les sous-domaines Render
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
