@@ -17,7 +17,7 @@ const ThreeJSViewer = React.lazy(() => import('./ThreeJSViewer'));
 
 // Composant principal du viewer
 function GPX3DViewer({ gpxData, width = 400, height = 300 }: GPX3DViewerProps) {
-  const [webGLAvailable, setWebGLAvailable] = useState(true);
+
   const [error, setError] = useState<string | null>(null);
   const [isMobile, setIsMobile] = useState(false);
 
@@ -26,7 +26,6 @@ function GPX3DViewer({ gpxData, width = 400, height = 300 }: GPX3DViewerProps) {
     const canvas = document.createElement('canvas');
     const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
     if (!gl) {
-      setWebGLAvailable(false);
       setError('WebGL is not supported by your browser');
     }
 

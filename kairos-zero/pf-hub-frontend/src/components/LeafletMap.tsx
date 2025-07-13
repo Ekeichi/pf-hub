@@ -50,7 +50,7 @@ const LeafletMap: React.FC<LeafletMapProps> = ({ gpxData, width = 800, height = 
     const coordinates = gpxData.map(point => [point.lat, point.lon] as [number, number]);
     
     // Ajouter la ligne de parcours
-    const polyline = L.polyline(coordinates, {
+    L.polyline(coordinates, {
       color: '#0066cc',
       weight: 4,
       opacity: 0.8

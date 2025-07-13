@@ -20,7 +20,7 @@ mapboxgl.accessToken = 'pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqc
 const TopoMap: React.FC<TopoMapProps> = ({ gpxData, width = 800, height = 400 }) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
-  const [mapLoaded, setMapLoaded] = useState(false);
+
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -51,7 +51,6 @@ const TopoMap: React.FC<TopoMapProps> = ({ gpxData, width = 800, height = 400 })
 
       // Attendre que la carte soit chargée
       map.current.on('load', () => {
-        setMapLoaded(true);
         
         if (map.current) {
           // Créer les coordonnées pour la ligne

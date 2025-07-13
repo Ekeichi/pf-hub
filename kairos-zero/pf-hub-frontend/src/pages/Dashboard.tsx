@@ -17,8 +17,7 @@ interface Activity {
 }
 
 const Dashboard: React.FC = () => {
-  const { user, logout, token } = useAuth();
-  const navigate = useNavigate();
+  const { user, logout } = useAuth();
   const [recentActivities, setRecentActivities] = useState<Activity[]>([]);
   const [loadingActivities, setLoadingActivities] = useState(false);
   const [syncingActivities, setSyncingActivities] = useState(false);
@@ -79,9 +78,7 @@ const Dashboard: React.FC = () => {
     triggerAutoSync();
   }, [user?.has_strava_linked]);
 
-  const handleLogout = async () => {
-    await logout();
-  };
+
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {

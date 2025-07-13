@@ -1,4 +1,4 @@
-import React, { useRef, useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
@@ -125,7 +125,7 @@ function StartEndPoints({ points }: { points: GPXPoint[] }) {
 }
 
 // Composant principal Three.js simplifié
-function ThreeJSViewer({ gpxData, width = 400, height = 300, onError }: ThreeJSViewerProps) {
+function ThreeJSViewer({ gpxData, onError }: ThreeJSViewerProps) {
   const [hasError, setHasError] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 

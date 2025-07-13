@@ -1,5 +1,5 @@
 // StravaSuccess.tsx
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { apiService } from "../services/apiService";
@@ -8,7 +8,7 @@ const StravaSuccess = () => {
   const [message, setMessage] = useState("Initialisation...");
   const [isSyncing, setIsSyncing] = useState(false);
   const [hasError, setHasError] = useState(false);
-  const [result, setResult] = useState(null);
+  const [result, setResult] = useState<any>(null);
   const { isLoading } = useAuth();
 
   useEffect(() => {
@@ -49,9 +49,9 @@ const StravaSuccess = () => {
           throw new Error(errorData.detail || "Erreur de synchronisation");
         }
         
-      } catch (error) {
+      } catch (error: any) {
         console.error("Erreur:", error);
-        setMessage(`Erreur: ${error.message}`);
+        setMessage(`Erreur: ${error.message || 'Unknown error'}`);
         setHasError(true);
         setIsSyncing(false);
       }
