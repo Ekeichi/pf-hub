@@ -17,7 +17,8 @@ const StravaLink: React.FC = () => {
   const handleStravaLink = () => {
     setIsLinking(true);
     // Redirection vers l'authentification Strava avec l'utilisateur connecté
-    window.location.href = 'http://localhost:8000/api/strava/auth';
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+    window.location.href = `${apiUrl.replace('/api', '')}/api/strava/auth`;
   };
 
   const handleSkipForNow = () => {

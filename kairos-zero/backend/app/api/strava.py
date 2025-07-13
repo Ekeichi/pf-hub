@@ -17,6 +17,7 @@ import time
 import pandas as pd
 import numpy as np
 from datetime import datetime
+import os
 
 router = APIRouter()
 service = StravaService()
@@ -46,8 +47,14 @@ def callback(code: str, db: Session = Depends(get_db)):
         expires_at=data["expires_at"]
     )
 
-    # Redirige vers le frontend après succès (sans synchronisation automatique)
-    return RedirectResponse("http://localhost:5173/strava-success")
+    # Redirige vers le frontend après succès (URL dynamique selon l'environnement)
+    ENVIRONMENT = os.environ.get("ENVIRONMENT", "development")
+    if ENVIRONMENT == "production":
+        frontend_url = "https://pf-hub-frontend.onrender.com/strava-success"
+    else:
+        frontend_url = "http://localhost:5173/strava-success"
+    
+    return RedirectResponse(frontend_url)
 
 @router.post("/strava/link-token")
 def link_strava_token_to_user(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):

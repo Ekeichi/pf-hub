@@ -11,7 +11,8 @@ const StravaLoginButton: React.FC<StravaLoginButtonProps> = ({ onLogin, isLoadin
       onLogin();
     } else {
       // Redirection par défaut vers l'authentification Strava
-      window.location.href = 'http://localhost:8000/api/strava/auth';
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+      window.location.href = `${apiUrl.replace('/api', '')}/api/strava/auth`;
     }
   };
 
