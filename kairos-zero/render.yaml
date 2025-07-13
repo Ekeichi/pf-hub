@@ -1,0 +1,41 @@
+services:
+  # Backend FastAPI
+  - type: web
+    name: pf-hub-backend
+    env: python
+    buildCommand: cd backend && pip install -r requirements.txt
+    startCommand: cd backend && uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: pf-hub-db
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: ALGORITHM
+        value: HS256
+      - key: ACCESS_TOKEN_EXPIRE_MINUTES
+        value: 30
+      - key: STRAVA_CLIENT_ID
+        sync: false
+      - key: STRAVA_CLIENT_SECRET
+        sync: false
+      - key: STRAVA_REDIRECT_URI
+        value: https://pf-hub-backend.onrender.com/api/strava/callback
+      - key: ENVIRONMENT
+        value: production
+
+  # Frontend React
+  - type: web
+    name: pf-hub-frontend
+    env: static
+    buildCommand: cd pf-hub-frontend && npm install && npm run build
+    staticPublishPath: ./pf-hub-frontend/dist
+    envVars:
+      - key: VITE_API_URL
+        value: https://pf-hub-backend.onrender.com/api
+
+databases:
+  - name: pf-hub-db
+    databaseName: pfhub
+    user: pfhub
