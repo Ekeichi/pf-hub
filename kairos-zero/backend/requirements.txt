@@ -30,5 +30,8 @@ scikit-learn
 # Alembic pour les migrations
 alembic
 
+# Base de données PostgreSQL
+psycopg2-binary
+
 # Variables d'environnement
 python-dotenv

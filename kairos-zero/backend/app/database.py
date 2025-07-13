@@ -1,10 +1,17 @@
+import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 
-DATABASE_URL = "sqlite:///./strava.db"
+# Utiliser PostgreSQL en production, SQLite en développement
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./strava.db")
 
-engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
+if DATABASE_URL.startswith("postgresql"):
+    # Configuration PostgreSQL
+    engine = create_engine(DATABASE_URL)
+else:
+    # Configuration SQLite (développement)
+    engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(bind=engine, autocommit=False, autoflush=False)
 
 # Base pour tous les modèles
