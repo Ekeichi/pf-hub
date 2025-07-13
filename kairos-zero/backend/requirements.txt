@@ -1,0 +1,33 @@
+# Dépendances Python requises pour le projet
+# FastAPI et dépendances
+# Outils de traitement GPX
+# Bibliothèques de machine learning
+# Utilitaires de développement
+
+fastapi
+uvicorn
+sqlalchemy
+requests
+python-multipart
+
+# Authentification et sécurité
+python-jose[cryptography]
+passlib[bcrypt]
+python-multipart
+
+# Validation des données
+pydantic[email]
+
+# Traitement GPX
+gpxpy
+
+# Calculs scientifiques
+numpy
+pandas
+matplotlib
+
+# Alembic pour les migrations
+alembic
+
+# Variables d'environnement
+python-dotenv
