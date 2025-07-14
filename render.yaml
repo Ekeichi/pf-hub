@@ -29,13 +29,11 @@ services:
   # Frontend React
   - type: web
     name: pf-hub-frontend
-    env: static
+    env: node
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    rootDir: kairos-zero/pf-hub-frontend
     plan: free
-    buildCommand: cd pf-hub-frontend && npm install && npm run build
-    staticPublishPath: ./pf-hub-frontend/dist
-    envVars:
-      - key: VITE_API_URL
-        value: https://pf-hub-backend.onrender.com/api
 
 databases:
   - name: pf-hub-db
