@@ -97,7 +97,7 @@ class AuthService {
    */
   async login(loginData: UserLoginData): Promise<AuthResponse> {
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/login`, {
+      const response = await fetch(`${API_BASE_URL}/auth/login`.replace('/api/api', '/api'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

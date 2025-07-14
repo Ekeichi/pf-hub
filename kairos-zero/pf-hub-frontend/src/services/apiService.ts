@@ -24,7 +24,7 @@ export class ApiService {
 
   // Méthodes d'authentification
   static async login(email: string, password: string): Promise<any> {
-    return this.makeRequest(`${API_BASE_URL}/auth/login`, {
+    return this.makeRequest(`${API_BASE_URL}/auth/login`.replace('/api/api', '/api'), {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     });
