@@ -8,7 +8,7 @@ Contient les endpoints pour :
 - Déconnexion
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Response
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from app.database import get_db
@@ -113,6 +113,11 @@ def login_user(user_data: UserLogin, db: Session = Depends(get_db)):
         token_type="bearer",
         expires_in=ACCESS_TOKEN_EXPIRE_MINUTES
     )
+
+
+@router.options("/login", include_in_schema=False)
+async def options_login():
+    return Response(status_code=200)
 
 
 @router.get("/me", response_model=UserResponse)
