@@ -60,7 +60,7 @@ const UploadGPX: React.FC = () => {
       const formData = new FormData();
       formData.append('file', file);
 
-      const response = await fetch('http://localhost:8000/api/upload-gpx', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000/api'}/upload-gpx`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
