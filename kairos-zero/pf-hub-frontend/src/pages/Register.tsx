@@ -84,11 +84,20 @@ const Register: React.FC = () => {
         lastname: formData.lastname,
         charte_accepted: formData.charte_accepted
       });
-      
       // Redirection vers la page de liaison Strava
       navigate('/strava-link');
-    } catch (error) {
-      setSubmitError(error instanceof Error ? error.message : 'Error during registration');
+    } catch (error: any) {
+      // Affichage détaillé de l'erreur backend
+      if (error && error.response) {
+        // Si l'erreur contient une réponse (ex: axios)
+        setSubmitError(error.response.data?.detail || JSON.stringify(error.response.data));
+      } else if (error instanceof Error) {
+        setSubmitError(error.message);
+      } else if (typeof error === 'object') {
+        setSubmitError(JSON.stringify(error));
+      } else {
+        setSubmitError('Erreur inconnue lors de l\'inscription');
+      }
     }
   };
 
