@@ -82,7 +82,18 @@ class AuthService {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.detail || 'Erreur lors de l\'inscription');
+        console.error('Erreur backend:', errorData);
+        
+        // Gestion détaillée des erreurs
+        if (errorData.detail) {
+          throw new Error(errorData.detail);
+        } else if (errorData.message) {
+          throw new Error(errorData.message);
+        } else if (typeof errorData === 'string') {
+          throw new Error(errorData);
+        } else {
+          throw new Error(`Erreur ${response.status}: ${JSON.stringify(errorData)}`);
+        }
       }
 
       return await response.json();
