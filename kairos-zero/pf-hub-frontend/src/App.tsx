@@ -1,5 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { Analytics } from "@vercel/analytics/react";
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Navbar from './components/Navbar';
 import Home from './pages/Home';
@@ -51,6 +52,7 @@ const AppContent: React.FC = () => {
           <Route path="/prediction-result" element={<ProtectedRoute><PredictionResult /></ProtectedRoute>} />
           <Route path="/heart-rate-zones/:activityId" element={<ProtectedRoute><HeartRateZones /></ProtectedRoute>} />
         </Routes>
+        <Analytics />
       </div>
     </Router>
   );

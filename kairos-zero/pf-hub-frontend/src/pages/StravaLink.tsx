@@ -35,7 +35,7 @@ const StravaLink: React.FC = () => {
           alignItems: 'center', 
           minHeight: '100vh' 
         }}>
-          <div>Chargement...</div>
+          <div>Loading...</div>
         </div>
       </div>
     );
@@ -85,9 +85,9 @@ const StravaLink: React.FC = () => {
               <svg width="60" height="60" viewBox="0 0 24 24" fill="#FC4C02" style={{ marginBottom: '1rem' }}>
                 <path d="M15.387 17.944c-.68.395-1.832 1.776-2.156 2.388-.324.612-1.296 1.668-2.156 2.388-.86.72-1.728 1.44-2.156 2.388-.428.948-.428 2.388-.428 2.388s0-1.44.428-2.388c.428-.948 1.296-1.668 2.156-2.388.86-.72 1.832-1.993 2.156-2.388.324-.395.68-.395 1.16 0z"/>
               </svg>
-              <h2 style={{ marginBottom: '1rem' }}>Lier votre compte Strava</h2>
+              <h2 style={{ marginBottom: '1rem' }}>Link your Strava account</h2>
               <p style={{ color: 'var(--color-text-secondary)', lineHeight: '1.6' }}>
-                En liant votre compte Strava, vous pourrez :
+                By linking your Strava account, you will be able to:
               </p>
             </div>
 
@@ -146,7 +146,7 @@ const StravaLink: React.FC = () => {
                   marginRight: '0.75rem', 
                   fontSize: '1.2rem' 
                 }}>✓</span>
-                Analyser vos données d'entraînement
+                Analyze your training data
               </li>
             </ul>
 
@@ -180,14 +180,14 @@ const StravaLink: React.FC = () => {
                     borderRadius: '50%',
                     animation: 'spin 1s linear infinite'
                   }}></div>
-                  Liaison en cours...
+                  Linking in progress...
                 </>
               ) : (
                 <>
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M15.387 17.944c-.68.395-1.832 1.776-2.156 2.388-.324.612-1.296 1.668-2.156 2.388-.86.72-1.728 1.44-2.156 2.388-.428.948-.428 2.388-.428 2.388s0-1.44.428-2.388c.428-.948 1.296-1.668 2.156-2.388.86-.72 1.832-1.993 2.156-2.388.324-.395.68-.395 1.16 0z"/>
                   </svg>
-                  Lier mon compte Strava
+                  Link my Strava account
                 </>
               )}
             </button>
@@ -205,7 +205,7 @@ const StravaLink: React.FC = () => {
                 cursor: 'pointer'
               }}
             >
-              Passer pour l'instant
+              Skip for now
             </button>
           </div>
 
@@ -214,7 +214,7 @@ const StravaLink: React.FC = () => {
             color: 'var(--color-text-secondary)',
             lineHeight: '1.5'
           }}>
-            Vous pourrez toujours lier votre compte Strava plus tard depuis votre profil.
+            You can always link your Strava account later from your profile.
           </p>
         </div>
       </main>
