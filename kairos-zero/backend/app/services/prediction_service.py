@@ -15,7 +15,7 @@ Utilise les modèles de prédiction de vitesse et de temps.
 import os
 import json
 from app.utils.gpx_tools import parse_gpx, calculate_slope_profile
-from app.utils.model_elev import elev_func
+from app.utils.predict_elev import elev_func_ml   
 from app.utils.model_time_pred import predicted_time, optimize_params, time_to_minutes
 from app.utils.retrieval_performance import get_running_records_from_csv
 import numpy as np
@@ -130,7 +130,7 @@ def predict_race_time(gpx_path: str, db: Session, athlete_id: int) -> tuple:
 
     try:
         print("Tentative d'appel à elev_func...")
-        k1, k2 = elev_func(df, vitesse_plat=vitesse_plat)
+        k1, k2, classifier = elev_func_ml(df, vitesse_plat=vitesse_plat)
         
         if k1 is None or k2 is None:
             print("elev_func a retourné None, utilisation de valeurs par défaut")
