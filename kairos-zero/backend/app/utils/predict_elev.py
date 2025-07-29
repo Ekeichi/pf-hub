@@ -553,54 +553,54 @@ def process_activities_for_prediction(activities, db, athlete_id):
     
     return df, len(valid_activities)
 
-def main():
-    import sys
-    import os
+# def main():
+#     import sys
+#     import os
     
-    # Ajouter le répertoire backend au PYTHONPATH pour les imports
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    backend_dir = os.path.dirname(os.path.dirname(os.path.dirname(current_dir)))
-    sys.path.insert(0, backend_dir)
+#     # Ajouter le répertoire backend au PYTHONPATH pour les imports
+#     current_dir = os.path.dirname(os.path.abspath(__file__))
+#     backend_dir = os.path.dirname(os.path.dirname(os.path.dirname(current_dir)))
+#     sys.path.insert(0, backend_dir)
     
-    # Ajouter aussi le répertoire courant au cas où
-    sys.path.insert(0, os.path.dirname(os.path.dirname(current_dir)))
+#     # Ajouter aussi le répertoire courant au cas où
+#     sys.path.insert(0, os.path.dirname(os.path.dirname(current_dir)))
     
-    try:
-        from app.repositories.strava_activity import get_activities_for_prediction
-        from app.database import get_db
+#     try:
+#         from app.repositories.strava_activity import get_activities_for_prediction
+#         from app.database import get_db
 
-        print("✅ Modules importés avec succès")
+#         print("✅ Modules importés avec succès")
         
-        db = next(get_db())
-        print("✅ Session de base de données créée")
-        athlete_id = 32883472
+#         db = next(get_db())
+#         print("✅ Session de base de données créée")
+#         athlete_id = 32883472
 
-        print(f"Récupération des activités pour l'athlète {athlete_id}...")
-        activities = get_activities_for_prediction(db, athlete_id)
-        print(f"Récupéré {len(activities)} activités")
+#         print(f"Récupération des activités pour l'athlète {athlete_id}...")
+#         activities = get_activities_for_prediction(db, athlete_id)
+#         print(f"Récupéré {len(activities)} activités")
         
-        df, valid_activities = process_activities_for_prediction(activities, db, athlete_id)
+#         df, valid_activities = process_activities_for_prediction(activities, db, athlete_id)
 
-        print(f"Activités valides: {valid_activities}")
+#         print(f"Activités valides: {valid_activities}")
 
-        if df is not None and len(df) > 0:
-            print("✅ Données valides trouvées, entraînement du modèle...")
-            print("bop ça passe ici")
-            k1, k2, classifier = elev_func_ml(df, 3.5)
-            print(f"✅ Modèle entraîné avec succès!")
-            print(f"k1 (montée): {k1}")
-            print(f"k2 (descente): {k2}")
-        else:
-            print("⚠️ Aucune donnée valide pour l'entraînement")
+#         if df is not None and len(df) > 0:
+#             print("✅ Données valides trouvées, entraînement du modèle...")
+#             print("bop ça passe ici")
+#             k1, k2, classifier = elev_func_ml(df, 3.5)
+#             print(f"✅ Modèle entraîné avec succès!")
+#             print(f"k1 (montée): {k1}")
+#             print(f"k2 (descente): {k2}")
+#         else:
+#             print("⚠️ Aucune donnée valide pour l'entraînement")
             
-    except ImportError as e:
-        print(f"❌ Erreur d'import: {e}")
-        print("Vérifiez que vous êtes dans le bon répertoire et que les modules sont disponibles")
+#     except ImportError as e:
+#         print(f"❌ Erreur d'import: {e}")
+#         print("Vérifiez que vous êtes dans le bon répertoire et que les modules sont disponibles")
         
-    except Exception as e:
-        print(f"❌ Erreur: {e}")
-        import traceback
-        traceback.print_exc()
+#     except Exception as e:
+#         print(f"❌ Erreur: {e}")
+#         import traceback
+#         traceback.print_exc()
 
-if __name__ == "__main__":
-    main()
+# if __name__ == "__main__":
+#     main()
